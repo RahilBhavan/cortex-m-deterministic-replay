@@ -1,5 +1,11 @@
 # Journal
 
+## 2026-08-07
+
+- Replaced hardcoded `0x70`/`0x78` branch redirects with Thumb-16 decode + ELF symbol diagnostics; 32 unit tests pass.
+- Added ceilings page, Renode investigation, demo GIF/cast assets, and blog/LinkedIn writeup copy.
+- Phase-0 tree published earlier the same day as `v0.1.0-phase0` with green host+RTL CI.
+
 ## 2026-08-06
 
 - QEMU 11.0.3 booted the genuine Cortex-M3 image on `mps2-an385`. Available interfaces rejected exact retirement callbacks, full-register snapshots, MMIO read override, and instruction-indexed IRQ injection. The QEMU campaign stopped at that boundary; no synthetic fallback was used.

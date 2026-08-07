@@ -24,6 +24,8 @@ flowchart TB
 | [runbooks](runbooks.md) | repeatable operations | troubleshooting |
 | [demo-script](demo-script.md) | interview talk track | five-minute path |
 | [resume-bullets](resume-bullets.md) | paste-ready claims | measured numbers only |
+| [ceilings](ceilings.md) | honesty contract | Unicorn/NVIC, P&R, bytes/sec |
+| [writeup](writeup.md) | blog / LinkedIn copy | Phase-0 narrative |
 | [hardware-handoff](hardware-handoff.md) | pending physical work | signoff checklist |
 
-Background: [scope](scope.md), [hardware boundary](hardware-boundary.md), [macOS setup](macos-setup.md), [QEMU investigation](qemu-instrumentation.md), [RTL results](rtl-results.md), [roadmap](ROADMAP.md), [journal](JOURNAL.md), [internal build prompt](internal/BUILD_PROMPT.md), and [ADRs](adr/001-emulation-host.md).
+Background: [scope](scope.md), [hardware boundary](hardware-boundary.md), [macOS setup](macos-setup.md), [QEMU investigation](qemu-instrumentation.md), [Renode investigation](renode-instrumentation.md), [RTL results](rtl-results.md), [roadmap](ROADMAP.md), [journal](JOURNAL.md), [internal build prompt](internal/BUILD_PROMPT.md), [demo assets](assets/), and [ADRs](adr/001-emulation-host.md).

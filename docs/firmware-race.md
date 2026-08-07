@@ -23,7 +23,8 @@ A deterministic insertion schedule chooses one of five instruction positions. Th
 | 3 | `0x5e` | `str r2, [r3, #0]`; first word is zero, second remains old |
 | 4 | `0x62` | `mov.w r2, #0x5a5a5a5a`; second-word value prepared, not stored |
 
-The scheduler uses `weights=(998, 1, 1, 1, 1)` over counts 0–4. `recorder/race_rate.py` runs 1,000 seeded trials and reports corruptions, not probability claims beyond that campaign. The exact PCs are compiler/build-dependent; the insertion counts are the scheduling contract. The Unicorn step path also hardcodes branch redirects at `0x70`/`0x78` → `0x64` for this ELF (see [emulator-record-replay.md](emulator-record-replay.md)); treat those as a rebuild ceiling, not portable Thumb semantics.
+The scheduler uses `weights=(998, 1, 1, 1, 1)` over counts 0–4. `recorder/race_rate.py` runs 1,000 seeded trials and reports corruptions, not probability claims beyond that campaign. The exact PCs are compiler/build-dependent; the insertion counts are the scheduling contract. Loop-back branches in the current ELF are followed by Thumb-16 decode (validated against `Reset_Handler` symbols in tests), not hardcoded PC redirects. See [ceilings.md](ceilings.md).
+
 
 | Seed | Trials | Corruptions |
 |---:|---:|---:|

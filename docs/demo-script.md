@@ -12,7 +12,7 @@ Embedded races are nondeterministic. Wall-clock debugging does not reproduce the
 make demo
 ```
 
-Expect seed 0 → `corruptions=2` per 1,000 trials, then one corrupting schedule replayed bit-identically. Mention seeds 1–3 are `1/2/1` in [verification.md](verification.md).
+Expect seed 0 → `corruptions=2` per 1,000 trials, then one corrupting schedule replayed bit-identically. Mention seeds 1–3 are `1/2/1` in [verification.md](verification.md). Preview: [assets/make-demo.gif](assets/make-demo.gif).
 
 ## 3. Bit-identical replay (60s)
 

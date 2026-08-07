@@ -1,0 +1,9 @@
+{"version": 2, "width": 88, "height": 16, "timestamp": 1786125251, "title": "make demo \u2014 Cortex-M deterministic race replay", "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
+[0.0, "o", "$ make demo\r\n"]
+[0.45, "o", "make -C firmware\r\n"]
+[0.8, "o", ".venv/bin/python -m tools.demo_race\r\n"]
+[1.15, "o", "trials=1000 seed=0 corruptions=2\r\n"]
+[1.5, "o", "corrupting schedule count=4: Unicorn record/replay identity ok (corruption flag set)\r\n"]
+[1.85, "o", "demo: race seed 0 locked; one corrupting schedule replayed bit-identically\r\n"]
+[2.2, "o", "$\r\n"]
+[3.85, "o", ""]

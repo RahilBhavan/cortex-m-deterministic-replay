@@ -14,5 +14,5 @@ Paste-ready lines. Numbers match [verification.md](verification.md). Do not upgr
 
 ## Depth / interview follow-ups
 
-- Documented a QEMU instrumentation dead-end (no combined retirement callback + 17-field snapshot + MMIO override + count-indexed IRQ) and rejected Renode for Phase 0 because the missing contract was instruction-core control, not SoC modeling.
-- Kept claims falsifiable: no bytes/sec without a clock contract; provisional P&R warnings left visible; hardware checklist unpublished until on-device golden streams exist.
+- Documented a QEMU instrumentation dead-end (no combined retirement callback + 17-field snapshot + MMIO override + count-indexed IRQ) and rejected Renode for Phase 0 because the missing contract was instruction-core control, not SoC modeling ([renode-instrumentation.md](renode-instrumentation.md)).
+- Kept claims falsifiable: no bytes/sec without a clock contract; provisional P&R warnings left visible; hardware checklist unpublished until on-device golden streams exist ([ceilings.md](ceilings.md)).

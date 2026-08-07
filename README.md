@@ -29,7 +29,15 @@ flowchart LR
 | Operations | [docs/runbooks.md](docs/runbooks.md) | runbooks |
 | Interview demo script | [docs/demo-script.md](docs/demo-script.md) | demo-script |
 | Resume bullets | [docs/resume-bullets.md](docs/resume-bullets.md) | resume-bullets |
+| Explicit ceilings | [docs/ceilings.md](docs/ceilings.md) | ceilings |
+| Writeup (blog/LinkedIn) | [docs/writeup.md](docs/writeup.md) | writeup |
 | Physical handoff | [docs/hardware-handoff.md](docs/hardware-handoff.md) | hardware-handoff |
+
+## Demo
+
+![make demo](docs/assets/make-demo.gif)
+
+Replayable terminal capture: [docs/assets/make-demo.cast](docs/assets/make-demo.cast) (`asciinema play docs/assets/make-demo.cast`).
 
 ## Reproduce
 

@@ -21,9 +21,10 @@
 
 `inject_irq(irq)` looks up the handler at vector-table offset `4*(16+irq)` and clears its Thumb bit for the handler PC. It writes a synthetic 8-word frame containing `R0-R3/LR/PC/xPSR` with the layout `R0-R3/R12/LR/PC/xPSR`, decrements SP by 32 bytes, sets `LR=0xfffffff9`, and enters the handler. The custom `bx lr` path restores that frame and returns to the saved PC. This is not native Unicorn Cortex-M exception semantics: there is no hardware stacking, priorities, masking, nested IRQ handling, or general NVIC model.
 
-## Branch PC ceiling
+## Branch PC advance
 
-`recorder/emulator.py` hardcodes two post-step PC redirects for the current `race.elf` control-flow shape: after retiring at `0x70` with the Z flag set, PC becomes `0x64`; after retiring at `0x78`, PC becomes `0x64`. Those addresses are build-dependent and are an explicit Phase-0 ceiling, not a general Thumb branch decoder. Rebuilds that move the race loop must update the patch sites or replace them with a disassembly-driven approach before treating PC maps in [firmware-race.md](firmware-race.md) as current.
+Thumb-16 unconditional and conditional branches are decoded from the instruction encoding and APSR flags in xPSR (`thumb16_next_pc`). ELF symbols are loaded for diagnostics and tests (`Reset_Handler`, `Timer_Handler`, …). There are no hardcoded `0x70`/`0x78` redirect sites. Rebuilds that change the race loop still require re-validating insertion counts in [firmware-race.md](firmware-race.md). Full Thumb-32 control-flow coverage remains a documented ceiling in [ceilings.md](ceilings.md).
+
 
 ## Replay and comparison
 

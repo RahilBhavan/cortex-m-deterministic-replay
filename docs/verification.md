@@ -17,6 +17,6 @@ This page owns numeric evidence. Commands below are the acceptance surface; obse
 
 > **Measured:** 10,000 randomized DTRC round trips; malformed and boundary rejection; 100,000 real 17-field replay; 20/20 clean and corrupt schedule replay.
 
-> **Not measured:** bytes/sec, physical ETM capture, sustained DDR throughput, board timing, pin legality, reset/CDC behavior on silicon.
+> **Not measured:** bytes/sec, physical ETM capture, sustained DDR throughput, board timing, pin legality, reset/CDC behavior on silicon. See [ceilings.md](ceilings.md).
 
 The 66-byte number is a stream-size observation. Dividing by seven gives 9.43 bytes/event; dividing by seconds is intentionally omitted because no modeled duration or clock contract exists.
