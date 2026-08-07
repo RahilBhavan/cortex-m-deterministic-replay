@@ -1,0 +1,2 @@
+# Representative-only LPF for provisional P&R; intentionally no board pin assignments.
+FREQUENCY PORT "clk" 100.000 MHZ;

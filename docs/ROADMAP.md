@@ -1,10 +1,14 @@
 # Roadmap
 
-Prioritized remaining work:
+The host-side prototype is complete for its stated scope. Remaining work is physical validation, not another emulator fallback.
 
-1. Replace the synthetic model with real firmware/emulator race behavior and validate the contract against it.
-2. Add 100k full-register validation across model and reference behavior.
-3. Add 10k randomized codec cases, including malformed and boundary inputs.
-4. Add disassembly-backed diagnostics for replay divergence.
-5. Implement and validate DDR buffering and clock-domain-crossing capture paths, including surfaced overflow and accepted-count status.
-6. Run ECP5 synthesis and measure Fmax; report results only when the toolchain and target constraints are available.
+| Phase | Deliverable | Exit evidence |
+|---|---|---|
+| 1 | board/device/package/pinout and I/O contract | approved schematic, LPF, clock plan |
+| 2 | physical trace/ETM ingress and DDR capture | pin-level waveform and loss tests |
+| 3 | CDC/reset/buffering validation | independent-clock stress, reset recovery, overflow logs |
+| 4 | on-device golden stream | exact 66-byte DTRC round trip |
+| 5 | physical replay acceptance | agreed 17-field comparison and reproducible race |
+| 6 | timing/performance report | measured clock, accepted counts, sustained capture; only then consider rate metrics |
+
+Do not convert provisional P&R into hardware timing, or stream size into bytes/sec. See [hardware-handoff.md](hardware-handoff.md).

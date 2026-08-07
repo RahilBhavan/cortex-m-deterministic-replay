@@ -1,7 +1,9 @@
 # Hardware boundary
 
-The current host/RTL boundary is one ordered raw byte stream. RTL preserves byte order and does not interpret or package trace events; framing remains in the DTRC bytes produced by `Trace.encode()`.
+The host/RTL boundary is one ordered raw DTRC byte stream. DTRC semantics belong to [trace-format.md](trace-format.md); RTL transports bytes only. The measured demo is 66 bytes across 7 events, or 9.43 bytes/event. Bytes/sec is intentionally not reported because no emulated duration or clock contract exists.
 
-Overflow and accepted count are sideband status, not packets in that stream. An overflowed capture is invalid and must not be decoded or replayed until the capture path is reset. Future host transport must surface both status values so callers can reject invalid captures and account for accepted bytes.
+`capture_fifo` is the same-clock reference FIFO used by direct Verilator tests. `capture_gate` models DDR nibble assembly followed by an asynchronous Gray-pointer FIFO; `gateway_top` ties both clocks together only for representative same-clock synthesis. These are different claims and must not be conflated.
 
-The checked-in FIFO simulation validates transport ordering and integrity only. It does not represent physical ETM capture, firmware timing, DDR, or clock-domain crossing behavior.
+Overflow and accepted count are sideband status. Overflow is sticky until coordinated reset and makes the capture invalid. Existing tests cover exact capture, overflow, and wrap; they do not validate physical ETM, pin timing, DDR, CDC metastability, board reset, sustained buffering, or silicon bandwidth.
+
+Physical ownership and acceptance criteria are in [hardware-handoff.md](hardware-handoff.md). Numeric results belong in [verification.md](verification.md).

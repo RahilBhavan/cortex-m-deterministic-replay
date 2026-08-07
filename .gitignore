@@ -1,5 +1,9 @@
 __pycache__/
 *.pyc
 .claude/
+.cursor/
 obj_dir/
 *.vvp
+.venv/
+gateway/build/
+firmware/build/

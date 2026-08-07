@@ -1,2 +1,5 @@
-from trace.format import Trace
-def record(events,build_id=b"demo-v1"): return Trace(build_id,events)
+"""Host-side Cortex-M recorder package."""
+
+from recorder.record import Recorder, decode_snapshots, encode_snapshots, record
+
+__all__ = ["Recorder", "decode_snapshots", "encode_snapshots", "record"]
