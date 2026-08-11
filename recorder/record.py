@@ -8,6 +8,29 @@ INSTRUCTIONS = 100_000
 SNAPSHOT_WORDS = 17
 
 
+def _validate_real_events(build_id, events):
+    trace = Trace(build_id, events)
+    trace.encode()
+    unsupported = [event[0] for event in trace.events if event[0] not in (1, 2, 3)]
+    if unsupported:
+        raise ValueError(f"real ELF replay does not support event tag {unsupported[0]}")
+    return trace.events
+
+
+def apply_real_event(cpu, event):
+    kind = event[0]
+    if kind == 1:
+        cpu.inject_irq(event[2])
+    elif kind == 2:
+        cpu.queue_read_override(event[2], event[3], event[4])
+    elif kind == 3:
+        if event[3] != len(event[4]):
+            raise ValueError("DMA declared length does not match payload")
+        cpu.dma(event[2], event[4])
+    else:
+        raise ValueError(f"real ELF replay does not support event tag {kind}")
+
+
 def encode_snapshots(states):
     encoded = bytearray()
     for state in states:
@@ -31,19 +54,20 @@ class Recorder:
         self.events = []
 
     def event(self, event):
-        self.events.append(tuple(event))
+        item = tuple(event)
+        _validate_real_events(self.cpu.build_id, [item])
+        if item[1] < self.cpu.count:
+            raise ValueError("cannot schedule an event in the past")
+        candidate = self.events + [item]
+        candidate.sort(key=lambda item: (item[1], item[0]))
+        self.events = _validate_real_events(self.cpu.build_id, candidate)
 
     def step(self):
         point = self.cpu.count
         for event in self.events:
             if event[1] != point:
                 continue
-            if event[0] == 1:
-                self.cpu.inject_irq(event[2])
-            elif event[0] == 2:
-                self.cpu.mmio[event[2]] = event[3]
-            elif event[0] == 3:
-                self.cpu.dma(event[2], event[4])
+            apply_real_event(self.cpu, event)
         state = self.cpu.step()
         self.states.append(state)
         return state
@@ -56,7 +80,7 @@ class Recorder:
         return self.states
 
     def trace(self):
-        return Trace(self.cpu.build_id, sorted(self.events, key=lambda e: (e[1], e[0])))
+        return Trace(self.cpu.build_id, self.events)
 
 
 def record(elf, events=(), instructions=INSTRUCTIONS):

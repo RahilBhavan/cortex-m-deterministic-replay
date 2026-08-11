@@ -29,7 +29,8 @@ module tb_capture_fifo_stream;
             $fatal(1, "INFILE, OUTFILE, and COUNT are required");
         if (input_count < 0 || input_count > MAX_BYTES)
             $fatal(1, "COUNT must be between 0 and MAX_BYTES");
-        $readmemh(input_path, input_bytes);
+        $readmemh(input_path, input_bytes, 0,
+                  input_count > 0 ? input_count - 1 : 0);
         output_fd = $fopen(output_path, "wb");
         if (output_fd == 0)
             $fatal(1, "cannot open OUTFILE");

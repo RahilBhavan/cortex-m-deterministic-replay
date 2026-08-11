@@ -10,12 +10,18 @@ class FirmwareRaceTest(unittest.TestCase):
         cpu = CortexM("firmware/build/race.elf")
         for _ in range(6):
             cpu.step()
-        pc = cpu.pc
+        before = cpu.snapshot()
+        commutation_before = bytes(cpu.uc.mem_read(cpu.symbols["commutation"], 8))
         cpu.inject_irq(0)
-        self.assertEqual(cpu.pc, 0x44)
+        self.assertEqual(cpu.pc, cpu.symbols["Timer_Handler"] & ~1)
         for _ in range(7):
-            cpu.step()
-        self.assertEqual(cpu.pc, pc)
+            after = cpu.step()
+        self.assertEqual(after, before)
+        self.assertEqual(cpu.snapshot(), before)
+        self.assertNotEqual(
+            bytes(cpu.uc.mem_read(cpu.symbols["commutation"], 8)),
+            commutation_before,
+        )
 
     def test_multiple_insertion_points(self):
         self.assertEqual(trial(3), 1)

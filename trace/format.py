@@ -63,6 +63,9 @@ class Trace:
                     (event[1] == last and event[0] < last_kind)):
                 raise TraceError("bad event ordering")
             kind, point = event[:2]
+            expected_arity = {1: 3, 2: 5, 3: 5, 4: 3, 5: 3, 6: 3, 7: 3}[kind]
+            if len(event) != expected_arity:
+                raise TraceError("malformed event")
             out += bytes([kind]) + varint(point - last)
             last, last_kind = point, kind
             try:
@@ -96,7 +99,10 @@ class Trace:
 
     @classmethod
     def decode(cls, data):
-        if not isinstance(data, (bytes, bytearray)) or len(data) < 10 or data[:4] != MAGIC or data[4] != VERSION:
+        if not isinstance(data, (bytes, bytearray)):
+            raise TraceError("bad header")
+        data = bytes(data)
+        if len(data) < 10 or data[:4] != MAGIC or data[4] != VERSION:
             raise TraceError("bad header")
         n = data[5]
         end = 6 + n

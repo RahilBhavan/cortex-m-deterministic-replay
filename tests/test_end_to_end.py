@@ -8,6 +8,7 @@ from replay.engine import first_divergence, replay
 from trace.format import Trace
 
 ROOT = Path(__file__).resolve().parents[1]
+GOLDEN = ROOT / "examples/golden-demo.dtrc"
 
 
 class TestEndToEnd(unittest.TestCase):
@@ -19,7 +20,7 @@ class TestEndToEnd(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             directory = Path(directory)
             input_hex = directory / "trace.hex"
-            input_hex.write_text("00\\n")
+            input_hex.write_text(f"{GOLDEN.read_bytes()[0]:02x}\n")
             binary = directory / "stream.vvp"
             subprocess.run([
                 iverilog, "-g2012", "-o", str(binary),
@@ -44,12 +45,8 @@ class TestEndToEnd(unittest.TestCase):
         if not iverilog or not vvp:
             self.skipTest("Icarus Verilog is not installed")
 
-        trace = Trace(events=[
-            (1, 2, 3), (2, 4, 0x4000, 7, 1),
-            (3, 6, 20, 2, b"AB"), (4, 8, 9),
-            (5, 10, 1), (6, 12, 0x1234), (7, 14, 0x55),
-        ])
-        encoded = trace.encode()
+        encoded = GOLDEN.read_bytes()
+        trace = Trace.decode(encoded)
         with tempfile.TemporaryDirectory() as directory:
             directory = Path(directory)
             input_hex = directory / "trace.hex"

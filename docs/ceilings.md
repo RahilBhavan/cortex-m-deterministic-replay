@@ -12,6 +12,8 @@ Unicorn 2.1.4 is the deterministic instruction core. It is **not**:
 
 `inject_irq` and the `BX LR` / `EXC_RETURN` path are a **narrow custom exception shim**. Race and replay evidence therefore proves the modeled schedule, not silicon IRQ latency or cache effects. Details: [emulator-record-replay.md](emulator-record-replay.md), [adr/001-emulation-host.md](adr/001-emulation-host.md).
 
+The real-ELF path accepts supplied IRQ, exact-width one-shot read overrides, and DMA memory writes (tags 1–3). Tags 4–7 are wire/model-demo events and are explicitly rejected by real replay. Supplied events are not evidence of automatic peripheral or physical capture.
+
 ## Thumb control flow (no hardcoded race PCs)
 
 Branch targets for Thumb-16 `B` / `B<cond>` are decoded from the instruction encoding and APSR flags. ELF symbols (`Reset_Handler`, `Timer_Handler`, …) are loaded for diagnostics and tests. Rebuilds that change the race loop still require re-checking insertion counts in [firmware-race.md](firmware-race.md); they do **not** require editing hardcoded `0x70`/`0x78` redirects.
@@ -20,7 +22,7 @@ Remaining decode ceiling: full Thumb-32 control flow (for example every `BL`/`BL
 
 ## Provisional P&R and unconstrained I/O
 
-nextpnr reports ~97 LUT4, ~91 DFF, ~217.58 MHz provisional Fmax at 100 MHz with **54 unconstrained-I/O warnings**. The LPF only constrains `clk`. That Fmax is a **tool estimate**, not board timing. Pin legality, I/O standards, and independent-clock CDC on silicon remain unchecked in [hardware-handoff.md](hardware-handoff.md). See [rtl-results.md](rtl-results.md).
+nextpnr reports 111 TRELLIS_COMB, 93 TRELLIS_FF, and 211.42 MHz provisional Fmax at 100 MHz with **54 unconstrained-I/O warnings**. The LPF only constrains `clk`. That Fmax is a **tool estimate**, not board timing. Pin legality, I/O standards, and independent-clock CDC on silicon remain unchecked in [hardware-handoff.md](hardware-handoff.md). See [rtl-results.md](rtl-results.md).
 
 ## No bytes/sec claim
 

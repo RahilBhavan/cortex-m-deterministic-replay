@@ -13,7 +13,7 @@ This page is the sole wire-spec owner. The exact implementation is `trace/format
 | … | variable | ordered events |
 | end-4 | 4 | little-endian CRC32 of every preceding byte |
 
-Integers are unsigned. Varints are little-endian base-128, minimally encoded, and limited to 64 bits. Event point is the cumulative instruction count; points ascend, and tags ascend for equal points. Unknown tags, trailing bytes, malformed lengths, overflow, bad CRC, and nonminimal varints are rejected.
+Integers are unsigned. Varints are little-endian base-128, minimally encoded, and limited to 64 bits. Event point is the cumulative instruction count; points ascend, and tags ascend for equal points. Python event tuples have exact tag-specific arity. Unknown tags, trailing bytes, malformed or extra fields, overflow, bad CRC, and nonminimal varints are rejected.
 
 ## Event tags
 
@@ -35,8 +35,8 @@ The demo contains seven events, one of each tag, and encodes to 66 bytes. That i
 
 ## Host/RTL contract
 
-The RTL transports the exact ordered encoded bytes. It does not parse tags 1–3 or 4–7, reserialize, or validate CRC. `overflow` and `accepted_count` are sideband status; any overflow invalidates the capture until reset.
+The RTL transports the exact ordered encoded bytes. It does not parse tags 1–3 or 4–7, reserialize, or validate CRC. Real-ELF replay supports tags 1–3 and explicitly rejects 4–7; the compact model implements all seven. `overflow` and `accepted_count` are capture-domain sideband status; any overflow invalidates and freezes the capture until reset.
 
 ## Validation
 
-`Trace.encode` validates bounds and ordering; `Trace.decode` validates header, CRC, canonical varints, payload lengths, ordering, and event count. Tests cover 10,000 deterministic randomized round trips plus malformed/boundary cases.
+`Trace.encode` validates exact shape, bounds, and ordering; `Trace.decode` normalizes byte input and validates header, CRC, canonical varints, payload lengths, ordering, and event count. Tests include exact bytearray re-encoding of `examples/golden-demo.dtrc`, equality with `golden-demo.hex`, 10,000 deterministic parser-property cases, and malformed/boundary rejection. Generated parser cases are robustness coverage, not real capture evidence.

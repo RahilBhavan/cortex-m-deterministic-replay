@@ -3,8 +3,8 @@
 ## Observed tools and outputs
 
 - Verilator 5.050 gateway simulations pass exact capture, overflow, and wrap behavior.
-- Yosys 0.68+post `synth_ecp5` reports 41 LUT4, 91 FF, 2 EBR (`TRELLIS_DPR16X4`), and 22 CCU2C.
-- nextpnr ECP5 `de8cd97`, Project Trellis 1.4_8, provisional `LFE5U-25F`/`CABGA381`: 97 LUT4 total (41 logic, 44 carry, 8 RAM, 4 RAMW), 91 DFF, 217.58 MHz provisional Fmax at 100 MHz, 54 unconstrained-I/O warnings.
+- Yosys 0.68+post `synth_ecp5` reports 41 LUT4, 93 FF, 2 EBR (`TRELLIS_DPR16X4`), and 22 CCU2C.
+- nextpnr ECP5 `de8cd97`, Project Trellis 1.4_8, provisional `LFE5U-25F`/`CABGA381`: 111 TRELLIS_COMB and 93 TRELLIS_FF, 211.42 MHz provisional Fmax at 100 MHz, and 54 unconstrained-I/O warnings.
 
 ## Interpretation
 

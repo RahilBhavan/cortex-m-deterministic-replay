@@ -9,6 +9,9 @@ module tb_capture_fifo;
     logic out_ready = 1'b0;
     logic overflow;
     logic [31:0] accepted_sequence;
+    logic [7:0] golden [0:4];
+    integer golden_fd, bytes_read;
+    reg [1023:0] input_path;
 
     always #5 clk = ~clk;
 
@@ -50,16 +53,26 @@ module tb_capture_fifo;
     endtask
 
     initial begin
+        if (!$value$plusargs("INFILE=%s", input_path))
+            $fatal(1, "INFILE is required");
+        golden_fd = $fopen(input_path, "rb");
+        if (golden_fd == 0)
+            $fatal(1, "cannot open INFILE");
+        bytes_read = $fread(golden, golden_fd);
+        $fclose(golden_fd);
+        if (bytes_read < 5)
+            $fatal(1, "INFILE must contain at least five bytes");
+
         repeat (2) @(negedge clk);
         reset = 1'b0;
 
-        drive_input(8'h11);
-        drive_input(8'h22);
+        drive_input(golden[0]);
+        drive_input(golden[1]);
         if (accepted_sequence !== 32'd2)
             $fatal(1, "sequence count mismatch after accepted inputs");
 
         @(negedge clk);
-        in_data = 8'h33;
+        in_data = golden[2];
         in_valid = 1'b1;
         if (in_ready)
             $fatal(1, "full FIFO did not apply backpressure");
@@ -70,22 +83,29 @@ module tb_capture_fifo;
         if (accepted_sequence !== 32'd2)
             $fatal(1, "rejected input changed sequence count");
 
-        check_output(8'h11);
-        check_output(8'h22);
+        check_output(golden[0]);
+        check_output(golden[1]);
 
-        drive_input(8'h44);
+        if (in_ready)
+            $fatal(1, "overflowed FIFO accepted input before reset");
+        @(negedge clk);
+        reset = 1'b1;
+        @(negedge clk);
+        reset = 1'b0;
+
+        drive_input(golden[3]);
         @(negedge clk);
         out_ready = 1'b1;
-        in_data = 8'h55;
+        in_data = golden[4];
         in_valid = 1'b1;
         if (!in_ready)
             $fatal(1, "simultaneous pop did not permit push");
         @(negedge clk);
         in_valid = 1'b0;
         out_ready = 1'b0;
-        if (accepted_sequence !== 32'd4)
+        if (accepted_sequence !== 32'd2)
             $fatal(1, "sequence count mismatch after simultaneous pop/push");
-        check_output(8'h55);
+        check_output(golden[4]);
 
         @(negedge clk);
         reset = 1'b1;

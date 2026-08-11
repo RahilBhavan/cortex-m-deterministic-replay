@@ -8,6 +8,8 @@ Phase-0 evidence runs entirely on the host. This repository does **not** claim p
 
 ## Start here
 
+Beginner textbook: [Cortex-M Replay textbook](.claude/artifacts/cortex-m-replay-textbook.html). Read it in order: mental model and first run → firmware race → host record/replay → DTRC bytes → synchronous FIFO → DDR/async CDC → benches → evidence ceilings. Specialist pages below remain canonical for detailed contracts and measured results.
+
 ```mermaid
 flowchart LR
   F[firmware/src/main.c] --> U[Unicorn CortexM]
@@ -28,6 +30,7 @@ flowchart LR
 | Numeric evidence | [docs/verification.md](docs/verification.md) | verification |
 | Operations | [docs/runbooks.md](docs/runbooks.md) | runbooks |
 | Interview demo script | [docs/demo-script.md](docs/demo-script.md) | demo-script |
+| Interview cheat sheet | [docs/interview-cheatsheet.md](docs/interview-cheatsheet.md) | interview-cheatsheet |
 | Resume bullets | [docs/resume-bullets.md](docs/resume-bullets.md) | resume-bullets |
 | Explicit ceilings | [docs/ceilings.md](docs/ceilings.md) | ceilings |
 | Writeup (blog/LinkedIn) | [docs/writeup.md](docs/writeup.md) | writeup |
@@ -59,7 +62,7 @@ PATH=/tmp/nextpnr-build:$PATH make pnr
 git diff --check
 ```
 
-The firmware target is `firmware/build/race.elf`; host tests use `python -m unittest discover -v`; gateway tests are Verilator simulations. macOS installation and nextpnr build instructions are in [docs/macos-setup.md](docs/macos-setup.md). Contribution notes are in [CONTRIBUTING.md](CONTRIBUTING.md).
+The firmware target is `firmware/build/race.elf`; host tests use `python -m unittest discover -v`; gateway transport is simulated under Icarus and Verilator. **CI contract:** the `host-tests` badge gate uses a checksum-verified Arm GNU Toolchain 15.2.Rel1, runs the unit suite, and carries the checked-in golden DTRC through the RTL FIFO with Icarus. The broader `rtl-verilator` job remains best-effort (`continue-on-error`) because Ubuntu Verilator packages vary. macOS installation and nextpnr build instructions are in [docs/macos-setup.md](docs/macos-setup.md). Contribution notes are in [CONTRIBUTING.md](CONTRIBUTING.md). Interview talk track: [docs/demo-script.md](docs/demo-script.md); one-page cheat sheet: [docs/interview-cheatsheet.md](docs/interview-cheatsheet.md).
 
 ## Evidence snapshot
 
@@ -67,16 +70,21 @@ The firmware target is `firmware/build/race.elf`; host tests use `python -m unit
 |---|---:|---|
 | Race campaign | seeds 0–3: 2/1/2/1 corruptions per 1,000 | deterministic host campaign |
 | Codec | 10,000 randomized round trips | DTRC encode/decode coverage |
-| Real replay | 100,000/100,000 | 17 fields per snapshot |
-| Divergence/replay | 20/20 clean and corrupt schedule 4 | real MMIO/differ diagnostics |
+| Real replay | 100,000/100,000; architectural PC/xPSR IRQ return checked | 17 fields per snapshot |
+| Events/divergence | 20/20 corrupting-schedule replay; real-ELF DMA; read-override differ | real Unicorn snapshots + diagnostics |
 | Demo trace | 66 bytes, 7 events, 9.43 bytes/event | encoded stream size only |
-| P&R | 97 LUT4, 91 DFF, 217.58 MHz provisional, 54 warnings | unassigned-I/O provisional result |
+| Golden RTL stream | exact 66-byte DTRC through Icarus FIFO and Verilator capture gate | simulated byte transport only |
+| P&R | 111 TRELLIS_COMB, 93 TRELLIS_FF, 211.42 MHz provisional, 54 warnings | unassigned-I/O provisional result |
 
 No bytes/sec number is reported: there is no defensible emulated-duration or clock contract. QEMU 11.0.3 boots the genuine image on `mps2-an385`, but does not expose the exact retirement/register/MMIO/IRQ controls required by this experiment. Unicorn 2.1.4 is therefore the real instruction core with a narrow exception shim, not a board model.
 
 ## Limitations and handoff
 
 Physical work remains: board/device/pin selection, ETM or trace ingress, CDC/reset validation, DDR buffering, legal constraints, on-device capture, and replay acceptance. See [docs/hardware-handoff.md](docs/hardware-handoff.md), [docs/ROADMAP.md](docs/ROADMAP.md), and [docs/hardware-boundary.md](docs/hardware-boundary.md).
+
+## License
+
+Released under the [MIT License](LICENSE).
 
 ## Glossary
 

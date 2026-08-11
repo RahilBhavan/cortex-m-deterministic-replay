@@ -9,17 +9,23 @@ module capture_gate #(
 );
     logic [7:0] byte_data;
     logic byte_valid, byte_ready, ddr_overflow, fifo_overflow;
-    logic coordinated_reset;
+    logic coordinated_reset, capture_local_reset, host_local_reset;
     assign coordinated_reset = capture_reset | host_reset;
     assign overflow = ddr_overflow | fifo_overflow;
+    reset_sync capture_reset_sync (
+        .clk(capture_clk), .async_reset(coordinated_reset), .reset(capture_local_reset)
+    );
+    reset_sync host_reset_sync (
+        .clk(host_clk), .async_reset(coordinated_reset), .reset(host_local_reset)
+    );
     ddr_capture ddr (
-        .clk(capture_clk), .reset(coordinated_reset), .nibble_rise(nibble_rise),
+        .clk(capture_clk), .reset(capture_local_reset), .nibble_rise(nibble_rise),
         .nibble_fall(nibble_fall), .valid(nibble_valid), .byte_data(byte_data),
         .byte_valid(byte_valid), .byte_ready(byte_ready), .overflow(ddr_overflow)
     );
     async_fifo #(.WIDTH(8), .ADDR_WIDTH(ADDR_WIDTH)) fifo (
-        .wclk(capture_clk), .wrst(coordinated_reset), .wdata(byte_data),
-        .wvalid(byte_valid), .wready(byte_ready), .rclk(host_clk), .rrst(coordinated_reset),
+        .wclk(capture_clk), .wrst(capture_local_reset), .wdata(byte_data),
+        .wvalid(byte_valid), .wready(byte_ready), .rclk(host_clk), .rrst(host_local_reset),
         .rdata(host_data), .rvalid(host_valid), .rready(host_ready),
         .overflow(fifo_overflow), .accepted_count(accepted_count)
     );

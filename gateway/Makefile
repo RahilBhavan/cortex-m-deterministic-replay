@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 TOP := gateway_top
 BUILD := build
-RTL := rtl/gateway_top.sv rtl/capture_gate.sv rtl/ddr_capture.sv rtl/async_fifo.sv
+RTL := rtl/gateway_top.sv rtl/capture_gate.sv rtl/reset_sync.sv rtl/ddr_capture.sv rtl/async_fifo.sv
 PART_SIZE ?= 25k
 PACKAGE ?= CABGA381
 

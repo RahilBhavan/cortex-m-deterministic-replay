@@ -2,7 +2,7 @@
 
 ## Contract
 
-The host produces an ordered DTRC byte stream. The gateway transports bytes and reports `overflow` plus `accepted_count`; it does not decode tags. Replay consumes the same decoded events and applies them before the instruction at the matching count.
+The host produces an ordered DTRC byte stream. Event points ascend; equal-point events execute in ascending tag order before the matching instruction. The gateway transports bytes and reports capture-domain `overflow` plus `accepted_count`; it does not decode tags. Real-ELF replay applies tags 1–3 and rejects model-only tags 4–7.
 
 ```mermaid
 sequenceDiagram
@@ -37,4 +37,4 @@ The real snapshot is 17 fields: R0–R12, SP, LR, PC, and xPSR. `replay/model.py
 
 ## Failure semantics
 
-Malformed DTRC, build-ID mismatch, invalid event order, FIFO overflow, or DMA bounds violations are errors. RTL overflow is sticky until coordinated reset. An overflowed stream cannot be accepted as a complete trace.
+Malformed DTRC, build-ID mismatch, invalid event order, unsupported real-ELF tags, unmatched read overrides, FIFO overflow, or DMA bounds violations are errors. RTL overflow is sticky until coordinated reset and freezes further acceptance. An overflowed stream cannot be accepted as a complete trace.

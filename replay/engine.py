@@ -1,7 +1,7 @@
 """Replay DTRC traces against the real Cortex-M emulator."""
 from replay.model import run as model_run
 from recorder.emulator import CortexM
-from recorder.record import SNAPSHOT_WORDS
+from recorder.record import SNAPSHOT_WORDS, _validate_real_events, apply_real_event
 
 
 def _checked(state):
@@ -16,6 +16,8 @@ def _events_at(events, point):
 
 def replay(trace, steps=100, elf=None, expected=None):
     """Return one complete 17-register snapshot per retired instruction."""
+    if not isinstance(steps, int) or steps < 0:
+        raise ValueError("steps must be a non-negative integer")
     if elf is None:
         return model_run(steps, trace.events)
     cpu = CortexM(elf)
@@ -23,15 +25,11 @@ def replay(trace, steps=100, elf=None, expected=None):
         raise ValueError("trace build ID does not match ELF")
     if expected is not None and expected != cpu.build_id:
         raise ValueError("expected build ID does not match ELF")
+    events = _validate_real_events(trace.build_id, trace.events)
     states = []
     while len(states) < steps:
-        for event in _events_at(trace.events, cpu.count):
-            if event[0] == 1:
-                cpu.inject_irq(event[2])
-            elif event[0] == 2:
-                cpu.mmio[event[2]] = event[3]
-            elif event[0] == 3:
-                cpu.dma(event[2], event[4])
+        for event in _events_at(events, cpu.count):
+            apply_real_event(cpu, event)
         states.append(_checked(cpu.step()))
     return states
 

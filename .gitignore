@@ -1,6 +1,11 @@
 __pycache__/
 *.pyc
-.claude/
+.claude/*
+!.claude/agents/
+!.claude/agents/*.md
+!.claude/artifacts/
+.claude/artifacts/*
+!.claude/artifacts/cortex-m-replay-textbook.html
 .cursor/
 obj_dir/
 *.vvp

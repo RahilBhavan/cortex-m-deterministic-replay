@@ -143,6 +143,7 @@ class CortexM:
         self.uc = Uc(UC_ARCH_ARM, UC_MODE_THUMB)
         self.count = 0
         self.mmio = mmio or {}
+        self._read_override: dict[str, object] | None = None
         self.build_id = hashlib.sha256(Path(elf).read_bytes()).digest()
         # Optional ELF symbol table for diagnostics / tests (not used for branching).
         self.symbols = self._load_symbols(Path(elf).read_bytes())
@@ -221,6 +222,23 @@ class CortexM:
     def _read(
         self, uc: Uc, access: int, address: int, size: int, value: int, user: object
     ) -> None:
+        if self._read_override is not None:
+            expected_address = self._read_override["address"]
+            expected_width = self._read_override["width"]
+            if address != expected_address or size != expected_width:
+                raise ValueError(
+                    "read override does not match instruction access: "
+                    f"expected {expected_address:#x}/{expected_width}, "
+                    f"got {address:#x}/{size}"
+                )
+            original = bytes(uc.mem_read(address, size))
+            uc.mem_write(
+                address,
+                int(self._read_override["value"]).to_bytes(size, "little"),
+            )
+            self._read_override["original"] = original
+            self._read_override["consumed"] = True
+            return
         if address in self.mmio:
             uc.mem_write(address, int(self.mmio[address]).to_bytes(size, "little"))
 
@@ -258,12 +276,42 @@ class CortexM:
             raise ValueError("invalid DMA")
         self.uc.mem_write(address, payload)
 
+    def queue_read_override(self, address: int, value: int, width: int) -> None:
+        """Apply one recorded read value to the next instruction's matching access."""
+        if self._read_override is not None:
+            raise ValueError("multiple read overrides for one instruction are unsupported")
+        if (
+            not isinstance(address, int)
+            or not 0 <= address <= 0xFFFFFFFF
+            or width not in (1, 2, 4)
+            or not isinstance(value, int)
+            or not 0 <= value < (1 << (8 * width))
+        ):
+            raise ValueError("invalid read override")
+        self._read_override = {
+            "address": address,
+            "value": value,
+            "width": width,
+            "consumed": False,
+            "original": None,
+        }
+
+    def _finish_read_override(self) -> None:
+        override = self._read_override
+        self._read_override = None
+        if override is None:
+            return
+        original = override["original"]
+        if original is not None:
+            self.uc.mem_write(int(override["address"]), original)
+        if not override["consumed"]:
+            raise ValueError("read override was not consumed by the scheduled instruction")
+
     def run(self, steps: int) -> list[tuple[int, ...]]:
         return [self.step() for _ in range(steps)]
 
-    def _exception_return(self) -> tuple[int, ...]:
-        """Restore the synthetic stacked frame for EXC_RETURN via BX LR."""
-        self.count += 1
+    def _restore_exception_frame(self) -> None:
+        """Restore every field owned by the narrow synthetic exception frame."""
         sp = self.uc.reg_read(UC_ARM_REG_SP)
         frame = struct.unpack("<8I", self.uc.mem_read(sp, 32))
         for reg, value in zip(
@@ -273,24 +321,19 @@ class CortexM:
         self.uc.reg_write(UC_ARM_REG_R12, frame[4])
         self.uc.reg_write(UC_ARM_REG_LR, frame[5])
         self.pc = frame[6] & ~1
+        self.uc.reg_write(UC_ARM_REG_PC, self.pc)
+        self.uc.reg_write(UC_ARM_REG_XPSR, frame[7])
         self.uc.reg_write(UC_ARM_REG_SP, sp + 32)
+
+    def _exception_return(self) -> tuple[int, ...]:
+        """Restore the synthetic stacked frame for EXC_RETURN via BX LR."""
+        self.count += 1
+        self._restore_exception_frame()
         return self.snapshot()
 
     def _advance_pc(self, pc: int, insn: int) -> None:
         """Set PC after a retired instruction using Thumb decode, not hardcodes."""
         xpsr = self.uc.reg_read(UC_ARM_REG_XPSR)
-        if insn == _BX_LR and self.uc.reg_read(UC_ARM_REG_LR) == _EXC_RETURN_THREAD:
-            sp = self.uc.reg_read(UC_ARM_REG_SP)
-            frame = struct.unpack("<8I", self.uc.mem_read(sp, 32))
-            for reg, value in zip(
-                (UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_R3), frame[:4]
-            ):
-                self.uc.reg_write(reg, value)
-            self.uc.reg_write(UC_ARM_REG_R12, frame[4])
-            self.uc.reg_write(UC_ARM_REG_LR, frame[5])
-            self.pc = frame[6] & ~1
-            self.uc.reg_write(UC_ARM_REG_SP, sp + 32)
-            return
         branched = thumb16_next_pc(pc, insn, xpsr)
         if branched is not None:
             self.pc = branched
@@ -302,8 +345,18 @@ class CortexM:
         insn = int.from_bytes(self.uc.mem_read(pc, 2), "little")
         # Synthetic exception return before Unicorn executes BX LR with EXC_RETURN.
         if insn == _BX_LR and self.uc.reg_read(UC_ARM_REG_LR) == _EXC_RETURN_THREAD:
+            self._finish_read_override()
             return self._exception_return()
-        self.uc.emu_start(pc | 1, 0, count=1)
+        try:
+            self.uc.emu_start(pc | 1, 0, count=1)
+        except Exception:
+            if self._read_override is not None:
+                original = self._read_override["original"]
+                if original is not None:
+                    self.uc.mem_write(int(self._read_override["address"]), original)
+                self._read_override = None
+            raise
+        self._finish_read_override()
         self.count += 1
         self._advance_pc(pc, insn)
         return self.snapshot()

@@ -4,6 +4,12 @@ LDFLAGS = -T linker/mps2.ld -nostdlib -Wl,--gc-sections
 
 all: build/race.elf
 
+.PHONY: toolchain-info
+
+toolchain-info:
+	$(CC) --version
+	$(CC) -dumpfullversion -dumpmachine
+
 build/race.elf: src/main.c linker/mps2.ld
 	mkdir -p build
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/main.c

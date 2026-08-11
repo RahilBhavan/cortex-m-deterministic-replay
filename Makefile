@@ -1,6 +1,6 @@
 PYTHON := .venv/bin/python
 
-.PHONY: check demo evidence firmware gateway-test rtl-test synth pnr
+.PHONY: check demo evidence firmware toolchain-info gateway-test rtl-test rtl-lint synth pnr
 
 check: .venv/bin/python firmware
 	@command -v verilator >/dev/null || { echo "check blocked: install Verilator and put it on PATH"; exit 1; }
@@ -27,13 +27,20 @@ evidence: .venv/bin/python firmware
 firmware:
 	$(MAKE) -C firmware
 
+toolchain-info:
+	$(MAKE) -C firmware toolchain-info
+
 rtl-test:
 	verilator --binary -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC --top-module tb_capture_fifo gateway/sim/tb_capture_fifo.sv gateway/rtl/capture_fifo.sv
-	./obj_dir/Vtb_capture_fifo
+	./obj_dir/Vtb_capture_fifo +INFILE=examples/golden-demo.dtrc
 
 gateway-test:
-	verilator --binary -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC --top-module tb_capture_gate gateway/sim/tb_capture_gate.sv gateway/rtl/capture_gate.sv gateway/rtl/ddr_capture.sv gateway/rtl/async_fifo.sv
-	./obj_dir/Vtb_capture_gate
+	verilator --binary -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC --top-module tb_capture_gate gateway/sim/tb_capture_gate.sv gateway/rtl/capture_gate.sv gateway/rtl/reset_sync.sv gateway/rtl/ddr_capture.sv gateway/rtl/async_fifo.sv
+	./obj_dir/Vtb_capture_gate +INFILE=examples/golden-demo.dtrc +COUNT=66
+
+rtl-lint:
+	verilator --lint-only --Wall --Wno-fatal --top-module capture_gate gateway/rtl/capture_gate.sv gateway/rtl/reset_sync.sv gateway/rtl/ddr_capture.sv gateway/rtl/async_fifo.sv
+	yosys -p 'read_verilog -sv gateway/rtl/gateway_top.sv gateway/rtl/capture_gate.sv gateway/rtl/reset_sync.sv gateway/rtl/ddr_capture.sv gateway/rtl/async_fifo.sv; hierarchy -top gateway_top -check; proc; opt; check'
 
 synth:
 	$(MAKE) -C gateway synth

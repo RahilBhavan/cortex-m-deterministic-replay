@@ -42,4 +42,4 @@ This sequence matches [ROADMAP.md](ROADMAP.md) phases 1–6. Host `make demo` / 
 
 ## Boundary
 
-The current P&R result is provisional, not physical validation: 97 LUT4, 91 DFF, 217.58 MHz provisional Fmax at 100 MHz, and 54 unconstrained-I/O warnings. No board timing, ETM correctness, or bytes/sec claim is signed off here.
+The current P&R result is provisional, not physical validation: 111 TRELLIS_COMB, 93 TRELLIS_FF, 211.42 MHz provisional Fmax at 100 MHz, and 54 unconstrained-I/O warnings. No board timing, ETM correctness, or bytes/sec claim is signed off here.

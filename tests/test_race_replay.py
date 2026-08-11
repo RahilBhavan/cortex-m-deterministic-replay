@@ -11,6 +11,20 @@ ELF = str(ROOT / "firmware/build/race.elf")
 
 
 class RaceReplayTest(unittest.TestCase):
+    def test_same_point_events_use_canonical_order_before_recording(self):
+        probe = CortexM(ELF)
+        vector_address = 4 * 16
+        default_vector = (probe.symbols["Default_Handler"] | 1).to_bytes(4, "little")
+        cpu = CortexM(ELF)
+        recorder = Recorder(cpu)
+        recorder.event((3, 0, vector_address, len(default_vector), default_vector))
+        recorder.event((1, 0, 0))
+        recorded = recorder.run(8)
+        trace = recorder.trace()
+        self.assertEqual([event[0] for event in trace.events], [1, 3])
+        self.assertEqual(recorded, replay(trace, 8, elf=ELF))
+        self.assertEqual(recorded[0][15], (probe.symbols["Timer_Handler"] & ~1) + 2)
+
     def test_corrupting_seed_schedule_replays_20_of_20(self):
         rng = random.Random(0)
         schedules = [rng.choices(range(5), weights=(998, 1, 1, 1, 1))[0]

@@ -11,7 +11,9 @@ module async_fifo #(
     localparam int DEPTH = 1 << ADDR_WIDTH;
     logic [WIDTH-1:0] mem [0:DEPTH-1];
     logic [ADDR_WIDTH:0] wbin, wgray, rbin, rgray;
-    logic [ADDR_WIDTH:0] rgray_w1, rgray_w2, wgray_r1, wgray_r2;
+    (* ASYNC_REG = "TRUE" *) logic [ADDR_WIDTH:0] rgray_w1, rgray_w2;
+    (* ASYNC_REG = "TRUE" *) logic [ADDR_WIDTH:0] wgray_r1, wgray_r2;
+    logic [ADDR_WIDTH:0] rgray_full_compare;
     logic wfull;
     logic wpush, rpop;
 
@@ -22,7 +24,17 @@ module async_fifo #(
         next_bin = b + 1'b1;
     endfunction
     assign wpush = wvalid && wready;
-    assign wready = !wfull;
+    initial begin
+        if (ADDR_WIDTH < 1)
+            $fatal(1, "async_fifo ADDR_WIDTH must be at least 1");
+    end
+
+    always_comb begin
+        rgray_full_compare = rgray_w2;
+        rgray_full_compare[ADDR_WIDTH -: 2] = ~rgray_w2[ADDR_WIDTH -: 2];
+    end
+
+    assign wready = !wfull && !overflow;
     assign rvalid = (rgray != wgray_r2);
     assign rdata = mem[rbin[ADDR_WIDTH-1:0]];
     assign rpop = rvalid && rready;
@@ -39,7 +51,7 @@ module async_fifo #(
                 wbin <= next_bin(wbin); wgray <= bin2gray(next_bin(wbin));
                 accepted_count <= accepted_count + 1'b1;
             end
-            wfull <= (bin2gray(next_bin(wbin)) == {~rgray_w2[ADDR_WIDTH:ADDR_WIDTH-1], rgray_w2[ADDR_WIDTH-2:0]});
+            wfull <= (bin2gray(next_bin(wbin)) == rgray_full_compare);
         end
     end
 

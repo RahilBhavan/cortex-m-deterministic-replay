@@ -1,6 +1,7 @@
 import random
 import struct
 import unittest
+from pathlib import Path
 from trace.format import Trace,TraceError,readvar
 from replay.engine import first_divergence
 from replay.model import CPU
@@ -45,4 +46,16 @@ class TestTrace(unittest.TestCase):
   c=CPU()
   with self.assertRaises(TraceError):c.apply((3,0,255,2,b"ab"))
   self.assertEqual(len(c.mem),256)
+ def test_checked_in_golden_bytearray_round_trip(self):
+  data=Path("examples/golden-demo.dtrc").read_bytes()
+  decoded=Trace.decode(bytearray(data))
+  self.assertIsInstance(decoded.events[2][4],bytes)
+  self.assertEqual(decoded.encode(),data)
+  self.assertEqual(bytes.fromhex(Path("examples/golden-demo.hex").read_text()),data)
+ def test_rejects_extra_event_fields(self):
+  events=[(1,0,1,99),(2,0,0,0,4,99),(3,0,0,0,b"",99),
+          (4,0,1,99),(5,0,1,99),(6,0,1,99),(7,0,1,99)]
+  for event in events:
+   with self.subTest(event=event),self.assertRaises(TraceError):
+    Trace(events=[event]).encode()
 if __name__=="__main__":unittest.main()

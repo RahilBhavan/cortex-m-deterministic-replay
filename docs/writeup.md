@@ -12,11 +12,11 @@ The idea: you do not need full instruction trace. You need every source of nonde
 
 What shipped:
 
-- Real Cortex-M3 race firmware + Unicorn recorder/replayer (17-field snapshots)
+- Real Cortex-M3 race firmware + Unicorn recorder/replayer (17-field snapshots, architectural PC/xPSR IRQ-return check)
 - CRC-validated DTRC v2 wire format
 - Measured race rarity (seeds 0–3 → 2/1/2/1 corruptions per 1,000) and 20/20 corrupting-schedule replay
-- SystemVerilog capture gateway verified in Verilator; provisional ECP5 P&R documented with unconstrained-I/O warnings left visible
-- Green CI, `make demo`, and an explicit hardware handoff checklist (physical ETM/board work still open)
+- Checked-in 66-byte DTRC transported exactly through Icarus/Verilator; reset/overflow behavior checked digitally
+- Checksum-pinned host CI + `make demo`, and an explicit hardware handoff checklist (physical ETM/board work still open; broader RTL Verilator job is best-effort in CI)
 
 I also wrote up why QEMU and Renode were the wrong Phase-0 hosts: great for boot/SoC demos, missing the retirement + count-indexed injection contract this experiment needs.
 
@@ -44,8 +44,8 @@ Capture interrupts, MMIO reads, and DMA completions at instruction-count boundar
 1. **Firmware race** — a commutation invariant broken when an IRQ lands between two stores.
 2. **Unicorn instruction core** — one-instruction steps, hooks, and a narrow exception shim (not a board/NVIC model).
 3. **DTRC v2** — compact tagged events with CRC32 and validation.
-4. **Replay + differ** — bit-identical campaigns and first-divergence diagnostics with disassembly.
-5. **FPGA gateway (sim)** — DDR nibble assembly and async FIFO path in SystemVerilog, Verilator-tested, provisionally placed for ECP5.
+4. **Replay + differ** — canonical IRQ/read-override/DMA replay, architectural exception-return checks, and first-divergence diagnostics with disassembly.
+5. **FPGA gateway (sim)** — logical nibble assembly, reset-synchronized async FIFO, and exact checked-in-golden transport in Icarus/Verilator; physical IDDR/ETM remains future work.
 
 ### Dead ends that were worth writing down
 

@@ -22,7 +22,7 @@ module capture_fifo #(
     assign out_valid = (count != 0);
     assign out_data = mem[read_ptr];
     assign pop = out_valid && out_ready;
-    assign in_ready = (count < DEPTH) || pop;
+    assign in_ready = ((count < DEPTH) || pop) && !overflow;
     assign push = in_valid && in_ready;
 
     always_ff @(posedge clk) begin
