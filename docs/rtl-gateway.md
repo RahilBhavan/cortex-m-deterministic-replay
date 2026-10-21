@@ -1,5 +1,7 @@
 # RTL gateway
 
+This page describes the SystemVerilog capture path, its clock-domain crossing, and reset behavior.
+
 ## Data path
 
 ```mermaid

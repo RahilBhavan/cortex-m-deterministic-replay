@@ -1,5 +1,7 @@
 # Runbooks
 
+This page gives repeatable verification commands and a troubleshooting table.
+
 ## Clean host verification
 
 ```sh

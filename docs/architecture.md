@@ -1,5 +1,7 @@
 # Architecture and data flow
 
+This page owns component boundaries and the data flow from firmware to trace, replay, and RTL.
+
 ## Contract
 
 The host produces an ordered DTRC byte stream. Event points ascend; equal-point events execute in ascending tag order before the matching instruction. The gateway transports bytes and reports capture-domain `overflow` plus `accepted_count`; it does not decode tags. Real-ELF replay applies tags 1–3 and rejects model-only tags 4–7.
