@@ -9,7 +9,7 @@ Paste-ready lines. Numbers match [verification.md](verification.md). Do not upgr
 ## Medium
 
 - Designed DTRC v2 (7 event tags, varints, CRC32) with 10,000 randomized encode/decode round trips and malformed-input rejection.
-- Implemented a Unicorn 2.1.4 Cortex-M recorder/replayer with canonical instruction-point IRQ/read-override/DMA injection and architectural PC/xPSR return checks (narrow exception shim, not a board/NVIC model); measured a bare-metal commutation race at seeds 0–3 (2/1/2/1 corruptions per 1,000) and replayed corrupting schedules 20/20.
+- Implemented a Unicorn 2.1.4 Cortex-M recorder/replayer with canonical instruction-point IRQ/read-override/DMA injection and architectural PC/xPSR return checks (narrow exception shim, not a board/NVIC model); measured a bare-metal commutation race at seeds 0–3 (2/1/2/1 corruptions per 1,000) and replayed the first corrupting schedule bit-identically in 20 of 20 repeats.
 - Wrote SystemVerilog capture gateware (logical nibble packing + async FIFO), transported the checked-in 66-byte DTRC exactly in Icarus/Verilator, verified overflow freeze/reset recovery, and ran open ECP5 synthesis (41 LUT4, 93 FF, 2 EBR, 22 CCU2C) with physical pin/CDC handoff still unchecked.
 
 ## Depth / interview follow-ups

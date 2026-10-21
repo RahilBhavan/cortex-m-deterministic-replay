@@ -1,14 +1,29 @@
-# Deterministic Cortex-M Trace and Replay
+# Deterministic Cortex-M trace and replay: bit-identical record and replay of firmware races on a host instruction core
 
-An `rr`-style record/replay debugger for Cortex-M firmware: capture IRQ, MMIO, and DMA nondeterminism into a CRC-validated DTRC v2 stream, replay a genuine ELF with bit-identical 17-field register snapshots, and carry a Verilator-validated FPGA capture gateway for eventual physical ingress.
+[![ci](https://github.com/RahilBhavan/cortex-m-deterministic-replay/actions/workflows/ci.yml/badge.svg)](https://github.com/RahilBhavan/cortex-m-deterministic-replay/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Phase-0 evidence runs entirely on the host. This repository does **not** claim physical-board capture, ETM correctness, sustained bandwidth, or hardware timing.
+![Terminal recording of make demo: the seed-0 race campaign finds 2 corruptions in 1,000 trials, then one corrupting schedule replays bit-identically](docs/assets/make-demo.gif)
 
-[![ci](https://github.com/RahilBhavan/cortex-m-deterministic-replay/actions/workflows/ci.yml/badge.svg)](https://github.com/RahilBhavan/cortex-m-deterministic-replay/actions/workflows/ci.yml)
+This is a Phase-0 prototype of an `rr`-style record and replay debugger for Cortex-M firmware. A Unicorn 2.1.4 instruction core runs a bare-metal Cortex-M3 race ELF. The recorder writes every IRQ, MMIO read, and DMA write into DTRC v2, a CRC32-checked varint trace format. Replay reproduces 17-field register snapshots bit-identically, and a SystemVerilog capture gateway carries the same trace bytes in Icarus and Verilator simulation. Everything runs on the host. There is no physical board capture yet.
 
-## Start here
+## What it does
 
-Beginner textbook: [Cortex-M Replay textbook](.claude/artifacts/cortex-m-replay-textbook.html). Read it in order: mental model and first run → firmware race → host record/replay → DTRC bytes → synchronous FIFO → DDR/async CDC → benches → evidence ceilings. Specialist pages below remain canonical for detailed contracts and measured results.
+Each number below comes from the named test or doc. CI run [31524893189](https://github.com/RahilBhavan/cortex-m-deterministic-replay/actions/runs/31524893189) on 2026-08-11 passed all 39 unit tests against the built ELF.
+
+| Capability | Observed result | Source |
+|---|---|---|
+| Firmware race | 2, 1, 2, and 1 corruptions per 1,000 trials for seeds 0–3 | `tests/test_firmware_race.py` (seed 0), [docs/verification.md](docs/verification.md) (seeds 1–3) |
+| Real-ELF replay | 100,000 of 100,000 instruction snapshots identical. Each snapshot has 17 fields: R0–R12, SP, LR, PC, and xPSR. | `tests/test_replay.py` |
+| Race replay | One corrupting schedule (IRQ at instruction 4, seed 0) recorded and replayed 20 times, 20 of 20 identical | `tests/test_race_replay.py` |
+| Trace codec | 10,000 seeded random encode and decode round trips, plus malformed-input rejection | `tests/test_trace.py` |
+| First divergence | An altered MMIO read override reports the first mismatched snapshot, with disassembly | `tests/test_differ.py`, `tools/differ.py` |
+| Golden stream | 66 bytes, 7 events (9.43 bytes per event), carried byte-for-byte through the RTL FIFO in Icarus and the capture gate in Verilator | `examples/golden-demo.dtrc`, `tests/test_end_to_end.py` |
+| ECP5 synthesis | 41 LUT4, 93 FF, 2 EBR, 22 CCU2C (Yosys) | [docs/rtl-results.md](docs/rtl-results.md) |
+| Place and route | 111 TRELLIS_COMB, 93 TRELLIS_FF, 211.42 MHz estimate, 54 warnings for unassigned I/O. This is provisional, not board timing. | [docs/rtl-results.md](docs/rtl-results.md) |
+
+The project reports no bytes-per-second figure. Instruction count is not an emulated clock, so the 66-byte stream has no duration to divide by.
+
+## How it works
 
 ```mermaid
 flowchart LR
@@ -20,31 +35,24 @@ flowchart LR
   P --> D[17-field snapshots and first divergence]
 ```
 
-| Need | Canonical page | Owner |
-|---|---|---|
-| Architecture and data flow | [docs/architecture.md](docs/architecture.md) | architecture |
-| Wire bytes and tags | [docs/trace-format.md](docs/trace-format.md) | trace-format |
-| Record/replay algorithms | [docs/emulator-record-replay.md](docs/emulator-record-replay.md) | emulator-record-replay |
-| Firmware race | [docs/firmware-race.md](docs/firmware-race.md) | firmware-race |
-| RTL and CDC | [docs/rtl-gateway.md](docs/rtl-gateway.md) | rtl-gateway |
-| Numeric evidence | [docs/verification.md](docs/verification.md) | verification |
-| Operations | [docs/runbooks.md](docs/runbooks.md) | runbooks |
-| Interview demo script | [docs/demo-script.md](docs/demo-script.md) | demo-script |
-| Interview cheat sheet | [docs/interview-cheatsheet.md](docs/interview-cheatsheet.md) | interview-cheatsheet |
-| Resume bullets | [docs/resume-bullets.md](docs/resume-bullets.md) | resume-bullets |
-| Explicit ceilings | [docs/ceilings.md](docs/ceilings.md) | ceilings |
-| Writeup (blog/LinkedIn) | [docs/writeup.md](docs/writeup.md) | writeup |
-| Physical handoff | [docs/hardware-handoff.md](docs/hardware-handoff.md) | hardware-handoff |
+- `firmware/src/main.c` holds a two-word invariant. `Timer_Handler` updates the words in two stores, and the main loop reads them in two loads, so an IRQ between the loads corrupts the pair.
+- `recorder/emulator.py` wraps Unicorn. It counts retired instructions, decodes Thumb-16 branches, and injects an IRQ at an exact instruction count through a narrow exception shim. The shim is not an NVIC model.
+- `recorder/record.py` records IRQ (tag 1), MMIO read (tag 2), and DMA (tag 3) events. `trace/format.py` encodes them as DTRC v2 with a build ID and CRC32.
+- `replay/engine.py` re-runs the same ELF, applies the events at their recorded instruction counts, and compares snapshots. `tools/differ.py` reports the first divergence.
+- `gateway/rtl/` holds the capture path: a synchronous FIFO, DDR capture, an async FIFO for the clock-domain crossing (CDC), and reset synchronizers. The gateway transports bytes only and does not parse DTRC.
 
-## Demo
+QEMU 11.0.3 boots the same image on `mps2-an385`, but its interfaces do not expose exact instruction retirement, full register snapshots, MMIO read override, or count-indexed IRQ injection. [docs/qemu-instrumentation.md](docs/qemu-instrumentation.md) records that dead end.
 
-![make demo](docs/assets/make-demo.gif)
+## Run it
 
-Replayable terminal capture: [docs/assets/make-demo.cast](docs/assets/make-demo.cast) (`asciinema play docs/assets/make-demo.cast`).
+Prerequisites:
 
-## Reproduce
+- Python 3.10 or later (CI uses 3.12) and `unicorn==2.1.4` from `requirements.txt`.
+- The Arm GNU Toolchain (`arm-none-eabi-gcc`) to build `firmware/build/race.elf`. CI pins 15.2.Rel1 with a SHA-256 check.
+- Icarus Verilog for the golden-stream FIFO test. Verilator for `make check` and the RTL targets.
+- Yosys, Project Trellis, and nextpnr-ecp5 only for `make synth` and `make pnr`. [docs/macos-setup.md](docs/macos-setup.md) lists the observed versions.
 
-Prerequisites: Python 3.10+, ARM GCC (`arm-none-eabi-gcc`), and (for the full gate) Verilator. `.venv/` is gitignored and must be created locally.
+Install the Python dependencies, then run the race demo. `make demo` builds the firmware, checks that seed 0 gives 2 corruptions, and replays one corrupting schedule.
 
 ```sh
 python3 -m venv .venv
@@ -52,40 +60,67 @@ python3 -m venv .venv
 make demo
 ```
 
-`make demo` locks seed-0 race corruptions at 2/1000 and replays one corrupting schedule bit-identically (~10–15s). Full host+RTL gate and campaign evidence:
+Run the unit tests:
 
 ```sh
-make check
-make evidence
-make synth
-PATH=/tmp/nextpnr-build:$PATH make pnr
-git diff --check
+.venv/bin/python -m unittest discover -v
 ```
 
-The firmware target is `firmware/build/race.elf`; host tests use `python -m unittest discover -v`; gateway transport is simulated under Icarus and Verilator. **CI contract:** the `host-tests` badge gate uses a checksum-verified Arm GNU Toolchain 15.2.Rel1, runs the unit suite, and carries the checked-in golden DTRC through the RTL FIFO with Icarus. The broader `rtl-verilator` job remains best-effort (`continue-on-error`) because Ubuntu Verilator packages vary. macOS installation and nextpnr build instructions are in [docs/macos-setup.md](docs/macos-setup.md). Contribution notes are in [CONTRIBUTING.md](CONTRIBUTING.md). Interview talk track: [docs/demo-script.md](docs/demo-script.md); one-page cheat sheet: [docs/interview-cheatsheet.md](docs/interview-cheatsheet.md).
+The suite has 39 tests. With the ELF built and Icarus installed, all 39 pass (CI, 2026-08-11). On a host without `arm-none-eabi-gcc` or Icarus, observed on 2026-10-21: 23 pass, 14 error on the missing `firmware/build/race.elf`, and 2 skip because Icarus is absent. The DTRC codec tests need neither.
 
-## Evidence snapshot
+Run the full host and RTL gate, the seed campaign, and the FPGA flow:
 
-| Measurement | Observed result | Interpretation |
-|---|---:|---|
-| Race campaign | seeds 0–3: 2/1/2/1 corruptions per 1,000 | deterministic host campaign |
-| Codec | 10,000 randomized round trips | DTRC encode/decode coverage |
-| Real replay | 100,000/100,000; architectural PC/xPSR IRQ return checked | 17 fields per snapshot |
-| Events/divergence | 20/20 corrupting-schedule replay; real-ELF DMA; read-override differ | real Unicorn snapshots + diagnostics |
-| Demo trace | 66 bytes, 7 events, 9.43 bytes/event | encoded stream size only |
-| Golden RTL stream | exact 66-byte DTRC through Icarus FIFO and Verilator capture gate | simulated byte transport only |
-| P&R | 111 TRELLIS_COMB, 93 TRELLIS_FF, 211.42 MHz provisional, 54 warnings | unassigned-I/O provisional result |
+```sh
+make check      # unit tests, model demo, Verilator FIFO and capture-gate tests
+make evidence   # race campaign for seeds 0-3, then the model demo
+make synth
+PATH=/tmp/nextpnr-build:$PATH make pnr
+```
 
-No bytes/sec number is reported: there is no defensible emulated-duration or clock contract. QEMU 11.0.3 boots the genuine image on `mps2-an385`, but does not expose the exact retirement/register/MMIO/IRQ controls required by this experiment. Unicorn 2.1.4 is therefore the real instruction core with a narrow exception shim, not a board model.
+CI has two jobs. `host-tests` builds the firmware, runs the 39 tests, carries the golden trace through the Icarus FIFO, and runs `make demo`. `rtl-verilator` runs the Verilator and Yosys checks with `continue-on-error`, because Ubuntu Verilator packages vary.
 
-## Limitations and handoff
+## Repository layout
 
-Physical work remains: board/device/pin selection, ETM or trace ingress, CDC/reset validation, DDR buffering, legal constraints, on-device capture, and replay acceptance. See [docs/hardware-handoff.md](docs/hardware-handoff.md), [docs/ROADMAP.md](docs/ROADMAP.md), and [docs/hardware-boundary.md](docs/hardware-boundary.md).
+- `firmware/`: bare-metal Cortex-M3 race firmware and MPS2 linker script.
+- `recorder/`: Unicorn wrapper, event recorder, and race campaign (`race_rate.py`).
+- `replay/`: real-ELF replay engine and a model-only seven-tag demo.
+- `trace/`: DTRC v2 encoder and decoder.
+- `tools/`: race demo, snapshot differ, trace statistics, and demo-asset recorder.
+- `gateway/`: SystemVerilog RTL, simulation benches, and provisional ECP5 constraints.
+- `tests/`: unit, replay, codec, and end-to-end RTL tests.
+- `examples/`: the 66-byte golden DTRC stream and its hex dump.
+- `docs/`: design, evidence, ceilings, and hardware handoff pages.
+
+## Documentation
+
+[docs/index.md](docs/index.md) maps every page. The main ones:
+
+- [Architecture](docs/architecture.md): components, data flow, and boundary ownership.
+- [DTRC v2 wire format](docs/trace-format.md): tags 1–7, varints, CRC32, and validation rules.
+- [Emulator, recording, and replay](docs/emulator-record-replay.md): the Unicorn choice, the IRQ shim, and the replay algorithm.
+- [Firmware race](docs/firmware-race.md): the invariant, insertion points, and seeds.
+- [RTL gateway](docs/rtl-gateway.md) and [RTL results](docs/rtl-results.md): capture paths, CDC, reset, and synthesis output.
+- [Verification](docs/verification.md): every measured number with its command.
+- [Ceilings](docs/ceilings.md): what the evidence does not show.
+- [Runbooks](docs/runbooks.md): repeatable commands and troubleshooting.
+- [Hardware handoff](docs/hardware-handoff.md) and [roadmap](docs/ROADMAP.md): the physical work that remains.
+- [Demo script](docs/demo-script.md), [interview cheat sheet](docs/interview-cheatsheet.md), [resume bullets](docs/resume-bullets.md), and [writeup](docs/writeup.md): presentation material that quotes only the verified numbers.
+- [Cortex-M replay textbook](.claude/artifacts/cortex-m-replay-textbook.html): a long beginner walkthrough, from the first run to the CDC benches.
+
+## Scope and limits
+
+- Independent portfolio work. Not affiliated with Arm, the Unicorn project, Lattice, or any employer.
+- Phase-0 prototype. Everything runs on the host. There is no physical-board capture and no Embedded Trace Macrocell (ETM) ingress.
+- Unicorn is an instruction core with a narrow IRQ shim. It has no hardware stacking, priorities, masking, nested IRQs, or general NVIC model.
+- The emulator decodes Thumb-16 `B` and `B<cond>` branches, which is all the race ELF needs. Full Thumb-32 control flow, such as every `BL` and `BLX` form, is not covered.
+- Real replay supports tags 1–3 only. Tags 4–7 exist in the model demo and are rejected for real ELFs.
+- Place and route is provisional. The constraints file sets only a 100 MHz clock and assigns no pins, so 211.42 MHz is a tool estimate.
+- No sustained bandwidth or bytes-per-second claim.
+- The 100,000-snapshot, race, and RTL numbers were not reproduced on 2026-10-21, because that host has no Arm toolchain, Icarus, Verilator, or Yosys. They come from CI and the checked-in docs.
+- Planned: board and pin selection, physical trace ingress, CDC and reset checks on silicon, an on-device golden stream, and physical replay acceptance. See [docs/hardware-handoff.md](docs/hardware-handoff.md).
 
 ## License
 
-Released under the [MIT License](LICENSE).
+[MIT](LICENSE).
 
-## Glossary
-
-**DTRC**: Deterministic Trace Record Container. **Retirement**: one completed instruction step in the host model. **MMIO**: memory-mapped I/O. **CDC**: clock-domain crossing. **ETM**: Embedded Trace Macrocell. **P&R**: place and route. **Fmax**: provisional timing estimate, not board timing.
+Part of [Rahil Bhavan's projects](https://github.com/RahilBhavan).

@@ -1,5 +1,7 @@
 # Journal
 
+This page is a dated log of work and observed results. Older entries keep the numbers measured at the time; current numbers live in [verification.md](verification.md).
+
 ## 2026-08-11
 
 - Restored architectural PC and xPSR on the narrow synthetic IRQ return and added an independent full-snapshot regression against the real race ELF.

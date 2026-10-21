@@ -1,5 +1,7 @@
 # Emulator, recording, and replay
 
+This page explains why Unicorn is the instruction core, how the recorder injects events, and how replay finds the first divergence.
+
 ## Host choices
 
 | Host | Role | Strength | Explicit limitation |
@@ -42,4 +44,4 @@ report = first_divergence(expected, states, trace.events)
 
 ## Evidence and limits
 
-The real campaign passes 100,000/100,000 states; corrupting schedules (including schedule count 4 from seed 0) replay 20/20. Real-ELF tests also verify architectural PC/xPSR restoration, canonical same-point IRQ/DMA ordering, DMA effects, and exact-width one-shot read overrides using values derived from the built firmware. The model's state+memory representation must not be described as the real 17-field snapshot. No wall-clock throughput is inferred because instruction count is not an emulated timebase.
+The real campaign passes 100,000/100,000 states; the first corrupting schedule from seed 0 (IRQ at instruction count 4), recorded and replayed 20 times, matches 20/20. Real-ELF tests also verify architectural PC/xPSR restoration, canonical same-point IRQ/DMA ordering, DMA effects, and exact-width one-shot read overrides using values derived from the built firmware. The model's state+memory representation must not be described as the real 17-field snapshot. No wall-clock throughput is inferred because instruction count is not an emulated timebase.

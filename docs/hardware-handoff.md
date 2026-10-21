@@ -1,5 +1,7 @@
 # Hardware handoff
 
+This page lists the physical work that remains before any board-level claim. None of it is done in Phase 0.
+
 ## Pending physical work
 
 1. Select FPGA device, package, board, voltage rails, I/O standards, and pinout.

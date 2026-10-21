@@ -1,5 +1,7 @@
 # RTL results
 
+This page records the observed simulation, synthesis, and provisional place-and-route output and how to read it.
+
 ## Observed tools and outputs
 
 - Verilator 5.050 gateway simulations pass exact capture, overflow, and wrap behavior.
