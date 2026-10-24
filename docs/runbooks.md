@@ -6,7 +6,7 @@ This page gives repeatable verification commands and a troubleshooting table.
 
 ```sh
 python3 -m venv .venv  # only if .venv is absent
-.venv/bin/pip install -r requirements.txt
+make setup  # or: .venv/bin/pip install --require-hashes -r requirements.txt
 make demo
 make check
 make evidence

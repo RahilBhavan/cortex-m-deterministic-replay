@@ -3,8 +3,7 @@
 ## Bootstrap
 
 ```sh
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+make setup
 make firmware
 make demo
 ```

@@ -64,7 +64,7 @@ Renode models boards and peripherals well, but Phase 0 needed retirement precisi
 ```sh
 git clone https://github.com/RahilBhavan/cortex-m-deterministic-replay
 cd cortex-m-deterministic-replay
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+make setup
 make demo
 ```
 
