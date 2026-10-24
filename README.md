@@ -66,7 +66,7 @@ Run the unit tests:
 .venv/bin/python -m unittest discover -v
 ```
 
-The suite has 39 tests. With the ELF built and Icarus installed, all 39 pass (CI, 2026-08-11). On a host without `arm-none-eabi-gcc` or Icarus, observed on 2026-10-21: 23 pass, 14 error on the missing `firmware/build/race.elf`, and 2 skip because Icarus is absent. The DTRC codec tests need neither.
+The suite has 39 tests. With the ELF built and Icarus installed, all 39 pass (CI, 2026-08-11). Without the ELF, 14 tests error on the missing `firmware/build/race.elf` (23 pass, 2 skip; observed 2026-10-21). With the pinned 15.2.Rel1 toolchain but no Icarus, 37 pass and 2 skip (observed 2026-10-24, Linux x86_64, Python 3.14.7). The DTRC codec tests need neither.
 
 Run the full host and RTL gate, the seed campaign, and the FPGA flow:
 
@@ -116,7 +116,7 @@ CI has two jobs. `host-tests` builds the firmware, runs the 39 tests, carries th
 - Real replay supports tags 1–3 only. Tags 4–7 exist in the model demo and are rejected for real ELFs.
 - Place and route is provisional. The constraints file sets only a 100 MHz clock and assigns no pins, so 211.42 MHz is a tool estimate.
 - No sustained bandwidth or bytes-per-second claim.
-- The 100,000-snapshot, race, and RTL numbers were not reproduced on 2026-10-21, because that host has no Arm toolchain, Icarus, Verilator, or Yosys. They come from CI and the checked-in docs.
+- On 2026-10-24 the race seeds 0–3 (2, 1, 2, 1 corruptions), the 100,000-snapshot replay and `make demo` were reproduced locally with the pinned Arm toolchain. The Icarus and Verilator RTL numbers, the Yosys and nextpnr results, and the QEMU 11.0.3 observation were not reproduced on that host, which has none of those tools. They come from CI and the checked-in docs.
 - Planned: board and pin selection, physical trace ingress, CDC and reset checks on silicon, an on-device golden stream, and physical replay acceptance. See [docs/hardware-handoff.md](docs/hardware-handoff.md).
 
 ## License
