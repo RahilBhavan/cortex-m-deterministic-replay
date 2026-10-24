@@ -1,16 +1,19 @@
 import unittest
 from pathlib import Path
-from recorder.record import record
-from recorder.emulator import CortexM
-from replay.engine import replay
-from tools.differ import compare
 from trace.format import Trace
+
+from recorder.emulator import CortexM
+from recorder.record import record
+from replay.engine import replay
+from tests.firmware import requires_firmware
+from tools.differ import compare
 
 ROOT = Path(__file__).resolve().parents[1]
 ELF = str(ROOT / "firmware/build/race.elf")
 
 
 class DifferTest(unittest.TestCase):
+    @requires_firmware
     def test_altered_read_override_reports_first_difference(self):
         probe = CortexM(ELF)
         reset = probe.symbols["Reset_Handler"] & ~1

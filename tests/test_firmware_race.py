@@ -1,11 +1,14 @@
 import subprocess
 import sys
 import unittest
+
 from recorder.emulator import CortexM
 from recorder.race_rate import trial
+from tests.firmware import requires_firmware
 
 
 class FirmwareRaceTest(unittest.TestCase):
+    @requires_firmware
     def test_irq_enters_and_returns(self):
         cpu = CortexM("firmware/build/race.elf")
         for _ in range(6):
@@ -23,6 +26,7 @@ class FirmwareRaceTest(unittest.TestCase):
             commutation_before,
         )
 
+    @requires_firmware
     def test_multiple_insertion_points(self):
         self.assertEqual(trial(3), 1)
         self.assertEqual(trial(4), 1)
@@ -30,12 +34,14 @@ class FirmwareRaceTest(unittest.TestCase):
         self.assertEqual(trial(1), 0)
         self.assertEqual(trial(2), 0)
 
+    @requires_firmware
     def test_schedule_reproducible(self):
         cmd = [sys.executable, "-m", "recorder.race_rate", "--trials", "1000", "--seed", "0"]
         first = subprocess.check_output(cmd, text=True)
         self.assertEqual(first, subprocess.check_output(cmd, text=True))
         self.assertEqual(first, "trials=1000 seed=0 corruptions=2\n")
 
+    @requires_firmware
     def test_seed0_campaign_locks_two_corruptions(self):
         """Lock the resume/verification claim: seed 0 yields exactly two corruptions."""
         out = subprocess.check_output(
