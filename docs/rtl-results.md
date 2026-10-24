@@ -4,7 +4,7 @@ This page records the observed simulation, synthesis, and provisional place-and-
 
 ## Observed tools and outputs
 
-- Verilator 5.050 gateway simulations pass exact capture, overflow, and wrap behavior.
+- Verilator 5.050 gateway simulations pass exact capture, overflow, and wrap behavior. On 2026-10-24 `make check` and `make rtl-lint` also passed with Verilator 5.053 and Yosys 0.70 (OSS CAD Suite build 2026-10-24, Linux x86_64).
 - Yosys 0.68+post `synth_ecp5` reports 41 LUT4, 93 FF, 2 EBR (`TRELLIS_DPR16X4`), and 22 CCU2C.
 - nextpnr ECP5 `de8cd97`, Project Trellis 1.4_8, provisional `LFE5U-25F`/`CABGA381`: 111 TRELLIS_COMB and 93 TRELLIS_FF, 211.42 MHz provisional Fmax at 100 MHz, and 54 unconstrained-I/O warnings.
 

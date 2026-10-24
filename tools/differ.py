@@ -1,6 +1,7 @@
 """Explain the first state difference between two replay streams."""
 import argparse
 import subprocess
+
 from replay.engine import first_divergence
 
 

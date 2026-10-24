@@ -2,6 +2,7 @@
 import argparse
 import struct
 from trace.format import Trace
+
 from .emulator import CortexM
 
 INSTRUCTIONS = 100_000

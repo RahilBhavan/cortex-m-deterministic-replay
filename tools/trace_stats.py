@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Report trace event/byte totals and workload byte rate."""
 import argparse
-from pathlib import Path
 import sys
+from pathlib import Path
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

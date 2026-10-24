@@ -55,8 +55,7 @@ Prerequisites:
 Install the Python dependencies, then run the race demo. `make demo` builds the firmware, checks that seed 0 gives 2 corruptions, and replays one corrupting schedule.
 
 ```sh
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+make setup   # creates .venv and installs the hashed, pinned requirements.txt
 make demo
 ```
 
@@ -66,7 +65,7 @@ Run the unit tests:
 .venv/bin/python -m unittest discover -v
 ```
 
-The suite has 39 tests. With the ELF built and Icarus installed, all 39 pass (CI, 2026-08-11). Without the ELF, 14 tests error on the missing `firmware/build/race.elf` (23 pass, 2 skip; observed 2026-10-21). With the pinned 15.2.Rel1 toolchain but no Icarus, 37 pass and 2 skip (observed 2026-10-24, Linux x86_64, Python 3.14.7). The DTRC codec tests need neither.
+The suite has 39 tests. With the ELF built and Icarus installed, all 39 pass (CI, 2026-08-11; locally on 2026-10-24, see below). Without the ELF, 16 tests skip with the message "run `make firmware`" and 23 pass (observed 2026-10-24). With the pinned 15.2.Rel1 toolchain but no Icarus, 37 pass and 2 skip (observed 2026-10-24, Linux x86_64, Python 3.14.7). The DTRC codec tests need neither.
 
 Run the full host and RTL gate, the seed campaign, and the FPGA flow:
 
@@ -77,7 +76,7 @@ make synth
 PATH=/tmp/nextpnr-build:$PATH make pnr
 ```
 
-CI has two jobs. `host-tests` builds the firmware, runs the 39 tests, carries the golden trace through the Icarus FIFO, and runs `make demo`. `rtl-verilator` runs the Verilator and Yosys checks with `continue-on-error`, because Ubuntu Verilator packages vary.
+CI has two jobs. `host-tests` installs the hashed requirements, runs `ruff check`, builds the firmware, runs the 39 tests, carries the golden trace through the Icarus FIFO, and runs `make demo`. `rtl-verilator` runs the Verilator and Yosys checks with `continue-on-error`, because Ubuntu Verilator packages vary.
 
 ## Repository layout
 
@@ -90,6 +89,7 @@ CI has two jobs. `host-tests` builds the firmware, runs the 39 tests, carries th
 - `tests/`: unit, replay, codec, and end-to-end RTL tests.
 - `examples/`: the 66-byte golden DTRC stream and its hex dump.
 - `docs/`: design, evidence, ceilings, and hardware handoff pages.
+- `AGENTS.md`, `.claude/`: agent workflow files that Rahil's coding agents read. They are not part of the DTRC design.
 
 ## Documentation
 
@@ -104,7 +104,7 @@ CI has two jobs. `host-tests` builds the firmware, runs the 39 tests, carries th
 - [Ceilings](docs/ceilings.md): what the evidence does not show.
 - [Runbooks](docs/runbooks.md): repeatable commands and troubleshooting.
 - [Hardware handoff](docs/hardware-handoff.md) and [roadmap](docs/ROADMAP.md): the physical work that remains.
-- [Demo script](docs/demo-script.md), [interview cheat sheet](docs/interview-cheatsheet.md), [resume bullets](docs/resume-bullets.md), and [writeup](docs/writeup.md): presentation material that quotes only the verified numbers.
+- [Demo script](docs/demo-script.md) and [writeup](docs/writeup.md): presentation material that quotes only the verified numbers.
 - [Cortex-M replay textbook](.claude/artifacts/cortex-m-replay-textbook.html): a long beginner walkthrough, from the first run to the CDC benches.
 
 ## Scope and limits
@@ -116,7 +116,7 @@ CI has two jobs. `host-tests` builds the firmware, runs the 39 tests, carries th
 - Real replay supports tags 1–3 only. Tags 4–7 exist in the model demo and are rejected for real ELFs.
 - Place and route is provisional. The constraints file sets only a 100 MHz clock and assigns no pins, so 211.42 MHz is a tool estimate.
 - No sustained bandwidth or bytes-per-second claim.
-- On 2026-10-24 the race seeds 0–3 (2, 1, 2, 1 corruptions), the 100,000-snapshot replay and `make demo` were reproduced locally with the pinned Arm toolchain. The Icarus and Verilator RTL numbers, the Yosys and nextpnr results, and the QEMU 11.0.3 observation were not reproduced on that host, which has none of those tools. They come from CI and the checked-in docs.
+- On 2026-10-24 the race seeds 0–3 (2, 1, 2, 1 corruptions), the 100,000-snapshot replay and `make demo` were reproduced locally with the pinned Arm toolchain. The same day, `make check` (39 tests, model demo, Verilator FIFO and capture-gate benches) and `make rtl-lint` passed locally with the OSS CAD Suite build 2026-10-24 (Verilator 5.053, Icarus Verilog 14.0, Yosys 0.70) unpacked without root. The Yosys synthesis counts, the nextpnr results, and the QEMU 11.0.3 observation were not reproduced on that host. They come from CI and the checked-in docs.
 - Planned: board and pin selection, physical trace ingress, CDC and reset checks on silicon, an on-device golden stream, and physical replay acceptance. See [docs/hardware-handoff.md](docs/hardware-handoff.md).
 
 ## License

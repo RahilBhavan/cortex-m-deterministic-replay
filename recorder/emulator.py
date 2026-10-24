@@ -9,14 +9,16 @@ from pathlib import Path
 
 try:
     from unicorn import (
-        Uc,
         UC_ARCH_ARM,
-        UC_MODE_THUMB,
         UC_HOOK_CODE,
         UC_HOOK_MEM_READ,
         UC_HOOK_MEM_WRITE,
+        UC_MODE_THUMB,
+        Uc,
     )
     from unicorn.arm_const import (
+        UC_ARM_REG_LR,
+        UC_ARM_REG_PC,
         UC_ARM_REG_R0,
         UC_ARM_REG_R1,
         UC_ARM_REG_R2,
@@ -31,8 +33,6 @@ try:
         UC_ARM_REG_R11,
         UC_ARM_REG_R12,
         UC_ARM_REG_SP,
-        UC_ARM_REG_LR,
-        UC_ARM_REG_PC,
         UC_ARM_REG_XPSR,
     )
 except ImportError as exc:
@@ -315,7 +315,7 @@ class CortexM:
         sp = self.uc.reg_read(UC_ARM_REG_SP)
         frame = struct.unpack("<8I", self.uc.mem_read(sp, 32))
         for reg, value in zip(
-            (UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_R3), frame[:4]
+            (UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_R3), frame[:4], strict=True
         ):
             self.uc.reg_write(reg, value)
         self.uc.reg_write(UC_ARM_REG_R12, frame[4])
