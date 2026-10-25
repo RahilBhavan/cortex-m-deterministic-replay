@@ -38,8 +38,11 @@ jobs:
 
       - name: Create venv and install deps
         run: |
-          python3 -m venv .venv
-          .venv/bin/pip install -r requirements.txt
+          make setup
+          .venv/bin/pip install ruff==0.17.2
+
+      - name: Lint
+        run: .venv/bin/ruff check .
 
       - name: Build firmware
         run: |

@@ -1,7 +1,7 @@
 """Replay DTRC traces against the real Cortex-M emulator."""
-from replay.model import run as model_run
 from recorder.emulator import CortexM
 from recorder.record import SNAPSHOT_WORDS, _validate_real_events, apply_real_event
+from replay.model import run as model_run
 
 
 def _checked(state):

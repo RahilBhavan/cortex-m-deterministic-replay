@@ -1,9 +1,11 @@
 import unittest
 from pathlib import Path
+from trace.format import Trace
+
 from recorder.emulator import CortexM
 from recorder.record import Recorder, decode_snapshots, encode_snapshots, record
 from replay.engine import first_divergence, replay
-from trace.format import Trace
+from tests.firmware import requires_firmware
 
 ROOT = Path(__file__).resolve().parents[1]
 ELF = str(ROOT / "firmware/build/race.elf")
@@ -16,6 +18,7 @@ class ReplayTest(unittest.TestCase):
             cpu.step()
         return cpu.count
 
+    @requires_firmware
     def test_real_100000_snapshot_replay(self):
         trace, recorded = record(ELF, instructions=100000)
         replayed = replay(trace, 100000, elf=ELF)
@@ -25,12 +28,14 @@ class ReplayTest(unittest.TestCase):
         self.assertIsNone(first_divergence(recorded, replayed, trace.events))
         self.assertEqual(decode_snapshots(encode_snapshots(recorded)), recorded)
 
+    @requires_firmware
     def test_build_id_is_required(self):
         trace, _ = record(ELF, instructions=1)
         trace.build_id = b"wrong-build"
         with self.assertRaises(ValueError):
             replay(trace, 1, elf=ELF)
 
+    @requires_firmware
     def test_real_dma_changes_execution_and_replays(self):
         probe = CortexM(ELF)
         reset = probe.symbols["Reset_Handler"] & ~1
@@ -46,6 +51,7 @@ class ReplayTest(unittest.TestCase):
         self.assertNotEqual(recorded[point], control[point])
         self.assertEqual(recorded[point][2], int.from_bytes(payload, "little"))
 
+    @requires_firmware
     def test_real_replay_rejects_model_only_golden_tags(self):
         golden = Trace.decode(Path("examples/golden-demo.dtrc").read_bytes())
         build_id = CortexM(ELF).build_id
@@ -55,6 +61,7 @@ class ReplayTest(unittest.TestCase):
             ):
                 replay(Trace(build_id, [event]), event[1] + 1, elf=ELF)
 
+    @requires_firmware
     def test_read_override_requires_matching_instruction_and_width(self):
         probe = CortexM(ELF)
         reset = probe.symbols["Reset_Handler"] & ~1
@@ -66,6 +73,7 @@ class ReplayTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "does not match instruction access"):
             record(ELF, events=[(2, point - 1, address, value, 4)], instructions=point)
 
+    @requires_firmware
     def test_read_override_is_one_shot_and_preserves_backing_memory(self):
         cpu = CortexM(ELF)
         reset = cpu.symbols["Reset_Handler"] & ~1

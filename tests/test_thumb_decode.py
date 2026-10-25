@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from recorder.emulator import CortexM, condition_passed, thumb16_next_pc, thumb_insn_size
+from tests.firmware import requires_firmware
 
 
 class ThumbDecodeTest(unittest.TestCase):
@@ -31,6 +32,7 @@ class ThumbDecodeTest(unittest.TestCase):
 
 
 class SymbolDrivenLoopTest(unittest.TestCase):
+    @requires_firmware
     def test_reset_handler_symbols_and_branch_sites(self) -> None:
         cpu = CortexM("firmware/build/race.elf")
         # ELF Thumb symbols store the Thumb bit in the low bit of st_value.

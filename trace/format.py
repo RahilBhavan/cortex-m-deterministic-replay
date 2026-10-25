@@ -93,8 +93,8 @@ class Trace:
                     if not isinstance(value, int) or not 0 <= value <= 0xffffffff:
                         raise TraceError("invalid event value")
                     out += struct.pack("<I" if kind in (4, 6, 7) else "<B", value)
-            except (IndexError, TypeError, ValueError, struct.error):
-                raise TraceError("malformed event")
+            except (IndexError, TypeError, ValueError, struct.error) as exc:
+                raise TraceError("malformed event") from exc
         return bytes(out) + struct.pack("<I", zlib.crc32(out))
 
     @classmethod
@@ -124,22 +124,32 @@ class Trace:
             last, last_kind = point, kind
             try:
                 if kind == 1:
-                    events.append((kind, point, body[i])); i += 1
+                    events.append((kind, point, body[i]))
+                    i += 1
                 elif kind == 2:
-                    address, value, width = struct.unpack_from("<IIB", body, i); i += 9
-                    if width not in (1, 2, 4) or value >= 1 << (8 * width): raise TraceError("invalid mmio")
+                    address, value, width = struct.unpack_from("<IIB", body, i)
+                    i += 9
+                    if width not in (1, 2, 4) or value >= 1 << (8 * width):
+                        raise TraceError("invalid mmio")
                     events.append((kind, point, address, value, width))
                 elif kind == 3:
-                    address, length, payload_length = struct.unpack_from("<IIH", body, i); i += 10
-                    if payload_length != length or address + length > 0x100000000 or i + length > len(body): raise TraceError("DMA length mismatch")
-                    events.append((kind, point, address, length, body[i:i + length])); i += length
+                    address, length, payload_length = struct.unpack_from("<IIH", body, i)
+                    i += 10
+                    if payload_length != length or address + length > 0x100000000 or i + length > len(body):
+                        raise TraceError("DMA length mismatch")
+                    events.append((kind, point, address, length, body[i:i + length]))
+                    i += length
                 elif kind in (4, 6, 7):
-                    value = struct.unpack_from("<I", body, i)[0]; i += 4; events.append((kind, point, value))
+                    value = struct.unpack_from("<I", body, i)[0]
+                    i += 4
+                    events.append((kind, point, value))
                 elif kind == 5:
-                    events.append((kind, point, body[i])); i += 1
+                    events.append((kind, point, body[i]))
+                    i += 1
                 else:
                     raise TraceError("unknown event")
-            except (IndexError, struct.error):
-                raise TraceError("truncated event")
-            if len(events) > MAX_EVENTS: raise TraceError("too many events")
+            except (IndexError, struct.error) as exc:
+                raise TraceError("truncated event") from exc
+            if len(events) > MAX_EVENTS:
+                raise TraceError("too many events")
         return cls(body[6:6 + n], events)

@@ -3,9 +3,9 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from trace.format import Trace
 
 from replay.engine import first_divergence, replay
-from trace.format import Trace
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = ROOT / "examples/golden-demo.dtrc"

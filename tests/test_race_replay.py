@@ -1,16 +1,19 @@
 import random
 import unittest
 from pathlib import Path
+
 from recorder.emulator import CortexM
-from recorder.record import Recorder
 from recorder.race_rate import trial
+from recorder.record import Recorder
 from replay.engine import replay
+from tests.firmware import requires_firmware
 
 ROOT = Path(__file__).resolve().parents[1]
 ELF = str(ROOT / "firmware/build/race.elf")
 
 
 class RaceReplayTest(unittest.TestCase):
+    @requires_firmware
     def test_same_point_events_use_canonical_order_before_recording(self):
         probe = CortexM(ELF)
         vector_address = 4 * 16
@@ -25,6 +28,7 @@ class RaceReplayTest(unittest.TestCase):
         self.assertEqual(recorded, replay(trace, 8, elf=ELF))
         self.assertEqual(recorded[0][15], (probe.symbols["Timer_Handler"] & ~1) + 2)
 
+    @requires_firmware
     def test_corrupting_seed_schedule_replays_20_of_20(self):
         rng = random.Random(0)
         schedules = [rng.choices(range(5), weights=(998, 1, 1, 1, 1))[0]

@@ -1,4 +1,6 @@
-import argparse, random
+import argparse
+import random
+
 from recorder.emulator import CortexM
 
 ELF = "firmware/build/race.elf"

@@ -7,9 +7,9 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from trace.format import Trace
 
 from tools.trace_stats import stats
-from trace.format import Trace
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = ROOT / "examples" / "golden-demo.dtrc"

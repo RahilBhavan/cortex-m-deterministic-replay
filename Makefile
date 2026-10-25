@@ -1,6 +1,6 @@
 PYTHON := .venv/bin/python
 
-.PHONY: check demo evidence firmware toolchain-info gateway-test rtl-test rtl-lint synth pnr
+.PHONY: setup check demo evidence firmware toolchain-info gateway-test rtl-test rtl-lint synth pnr
 
 check: .venv/bin/python firmware
 	@command -v verilator >/dev/null || { echo "check blocked: install Verilator and put it on PATH"; exit 1; }
@@ -13,8 +13,13 @@ check: .venv/bin/python firmware
 demo: .venv/bin/python firmware
 	$(PYTHON) -m tools.demo_race
 
+# Create .venv and install the hashed, pinned Python dependencies.
+setup:
+	python3 -m venv .venv
+	.venv/bin/pip install --require-hashes -r requirements.txt
+
 .venv/bin/python:
-	@echo "check blocked: create .venv first (python3 -m venv .venv && .venv/bin/pip install -r requirements.txt)"
+	@echo "check blocked: run 'make setup' first to create .venv"
 	@exit 1
 
 evidence: .venv/bin/python firmware
