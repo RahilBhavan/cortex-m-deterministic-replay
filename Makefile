@@ -1,6 +1,6 @@
 PYTHON := .venv/bin/python
 
-.PHONY: setup check demo evidence firmware toolchain-info gateway-test rtl-test rtl-lint synth pnr
+.PHONY: setup check demo evidence firmware firmware-hash toolchain-info gateway-test rtl-test rtl-lint synth pnr
 
 check: .venv/bin/python firmware
 	@command -v verilator >/dev/null || { echo "check blocked: install Verilator and put it on PATH"; exit 1; }
@@ -31,6 +31,9 @@ evidence: .venv/bin/python firmware
 
 firmware:
 	$(MAKE) -C firmware
+
+firmware-hash: firmware
+	$(MAKE) -C firmware check-hash
 
 toolchain-info:
 	$(MAKE) -C firmware toolchain-info
