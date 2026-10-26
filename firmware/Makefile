@@ -4,7 +4,7 @@ LDFLAGS = -T linker/mps2.ld -nostdlib -Wl,--gc-sections
 
 all: build/race.elf
 
-.PHONY: toolchain-info
+.PHONY: toolchain-info check-hash
 
 toolchain-info:
 	$(CC) --version
@@ -13,6 +13,11 @@ toolchain-info:
 build/race.elf: src/main.c linker/mps2.ld
 	mkdir -p build
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/main.c
+
+# The ELF is byte-reproducible with the pinned Arm GNU Toolchain 15.2.Rel1.
+# Other compiler versions give a different hash; update race.elf.sha256 with them.
+check-hash: build/race.elf
+	sha256sum --check --strict race.elf.sha256
 
 # QEMU boot smoke: firmware is an infinite loop with no semihosting output.
 # Success means the image loads and runs until the timeout kills QEMU (124).

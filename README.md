@@ -48,7 +48,7 @@ QEMU 11.0.3 boots the same image on `mps2-an385`, but its interfaces do not expo
 Prerequisites:
 
 - Python 3.10 or later (CI uses 3.12) and `unicorn==2.1.4` from `requirements.txt`.
-- The Arm GNU Toolchain (`arm-none-eabi-gcc`) to build `firmware/build/race.elf`. CI pins 15.2.Rel1 with a SHA-256 check.
+- The Arm GNU Toolchain (`arm-none-eabi-gcc`) to build `firmware/build/race.elf`. CI pins 15.2.Rel1 with a SHA-256 check, and `make firmware-hash` checks that the built ELF matches `firmware/race.elf.sha256`. The build is byte-identical across two checkouts in different directories (observed 2026-10-25).
 - Icarus Verilog for the golden-stream FIFO test. Verilator for `make check` and the RTL targets.
 - Yosys, Project Trellis, and nextpnr-ecp5 only for `make synth` and `make pnr`. [docs/macos-setup.md](docs/macos-setup.md) lists the observed versions.
 
@@ -65,7 +65,7 @@ Run the unit tests:
 .venv/bin/python -m unittest discover -v
 ```
 
-The suite has 39 tests. With the ELF built and Icarus installed, all 39 pass (CI, 2026-08-11; locally on 2026-10-24, see below). Without the ELF, 16 tests skip with the message "run `make firmware`" and 23 pass (observed 2026-10-24). With the pinned 15.2.Rel1 toolchain but no Icarus, 37 pass and 2 skip (observed 2026-10-24, Linux x86_64, Python 3.14.7). The DTRC codec tests need neither.
+The suite has 39 tests. CI builds the ELF and installs Icarus, so all 39 run there. Without Icarus, 37 pass and 2 skip (local run, 2026-10-25, pinned 15.2.Rel1 toolchain). Without the ELF, 16 tests skip with the message "run `make firmware`" and 23 pass (observed 2026-10-24). With the pinned 15.2.Rel1 toolchain but no Icarus, 37 pass and 2 skip (observed 2026-10-24, Linux x86_64, Python 3.14.7). The DTRC codec tests need neither.
 
 Run the full host and RTL gate, the seed campaign, and the FPGA flow:
 
